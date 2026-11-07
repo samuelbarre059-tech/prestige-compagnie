@@ -57,6 +57,7 @@ th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--ln);font-s
 </head>
 <body>
 <div id="app" style="display:contents"></div>
+<script src="firebase-config.js"></script>
 <script>
 /* ===== DONNÉES =====
    Couche de stockage isolée : aujourd’hui localStorage (données propres à chaque navigateur).
@@ -74,9 +75,14 @@ const seed=()=>({users:[{id:'S.Mouveau',name:'Samuel Mouveau',pin:'9999',role:'a
  menu:[{n:'Muffin chocolat',p:5,c:'Douceurs'},{n:'Café chaud',p:3,c:'Boissons'}],logos:{}});
 const load=()=>{try{return JSON.parse(localStorage.getItem(KEY))||seed()}catch(x){return seed()}};
 const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(D))}catch(x){alert('Stockage plein : réduis la taille des logos.')}};
-let D=load(),U=null,P='home',placing=false;
-try{U=D.users.find(u=>u.id==sessionStorage.s)||null}catch(x){}
-const save=()=>{persist();render()};
+const FB_ON=!!window.FIREBASE_CONFIG;let SETUP=false,AUTHID=null,pending=false,mKeep=false;
+let D=FB_ON?{users:[],patrols:[],events:[],tx:[],news:[],veh:{BRB:[],RD:[],PR:[]},menu:[],logos:{}}:load(),U=null,P='home',placing=false;
+if(!FB_ON)try{U=D.users.find(u=>u.id==sessionStorage.s)||null}catch(x){}
+const save=()=>{FB_ON?window.FBX?.sync():persist();render()};
+/* Rafraîchit sans casser un formulaire en cours de saisie */
+function softRender(){const a=document.activeElement;if(a&&/INPUT|SELECT/.test(a.tagName)&&a.closest('main'))pending=true;else render()}
+document.addEventListener('focusout',()=>{if(pending)setTimeout(()=>{const a=document.activeElement;if(!(a&&/INPUT|SELECT/.test(a.tagName))){pending=false;render()}},1200)});
+const medals=id=>D.events.filter(x=>x.m&&(x.aw||[]).includes(id)).map(x=>({m:x.m,e:x.t,d:x.d}));
 
 /* ===== OUTILS ===== */
 const $=i=>document.getElementById(i),v=i=>$(i).value.trim();
@@ -89,7 +95,7 @@ const usr=id=>D.users.find(u=>u.id==id),nm=id=>usr(id)?.name||id;
 const bal=f=>D.tx.filter(t=>!f||t.f==f).reduce((a,t)=>a+t.a,0);
 const money=n=>n.toLocaleString('fr-FR')+' $';
 const lg=k=>`<img src="${D.logos[k]||(k=='main'?'img/prestige.png':F[k].i)}" alt="">`;
-const go=p=>{P=p;placing=false;render();scrollTo(0,0)};
+const go=p=>{P=p;placing=false;if(p!='map')mKeep=false;render();scrollTo(0,0)};
 const del=(a,id)=>{if(confirm('Supprimer cet élément ?')){D[a]=D[a].filter(x=>x.id!=id);save()}};
 const today=()=>new Date().toISOString().slice(0,10);
 
@@ -98,22 +104,23 @@ function nav(){
  const it=[['home',U?'Tableau de bord':'Accueil'],['menu','Menu de la Roue des Délices']];
  if(U){Object.keys(F).filter(canV).forEach(k=>it.push([k,F[k].s]));it.push(['map','Carte interactive']);
   if(lvl()>=2)it.push(['adm','Administratif'],['tre','Trésorerie']);if(lvl()>=5)it.push(['ges','Gestion'])}
- else it.push(['login','Connexion salariés']);
+ else{it.push(['login','Connexion salariés']);if(SETUP)it.push(['setup','Première installation'])}
  return it.map(([k,t])=>`<a class="nv${P==k?' on':''}" tabindex=0 onclick="go('${k}')" style="--ac:${F[k]?.c||'#d4b055'}">${F[k]?`<img class=ni src="${F[k].i}" alt="">`:IC[k]||'🔑'} ${t}</a>`).join('')}
 
 function render(){
- if(U)U=usr(U.id)||null;
+ if(FB_ON)U=AUTHID?D.users.find(u=>u.id.toLowerCase()==AUTHID)||null:null;else if(U)U=usr(U.id)||null;
+ if(U&&(P=='login'||P=='setup'))P='home';
  const need={map:1,adm:2,tre:2,ges:5};
- if(P!='login'&&P!='menu'&&P!='home'&&((F[P]&&!canV(P))||(need[P]&&lvl()<need[P])))P=U?'home':'login';
+ if(P!='login'&&P!='setup'&&P!='menu'&&P!='home'&&((F[P]&&!canV(P))||(need[P]&&lvl()<need[P])))P=U?'home':'login';
  $('app').innerHTML=`<aside><div class=brand>${lg('main')}Prestige Compagnie</div>${nav()}<div class=sp></div>
- ${U?`<div class=me><b>${e(U.name)}</b><span class=mu>${R[U.role][0]}${U.f?' · '+F[U.f].s:''}</span><br><button class="btn g s" style="margin-top:8px" onclick="logout()">Se déconnecter</button></div>`:''}</aside>
+ ${U?`<div class=me><b>${e(U.name)}</b><span class=mu>${R[U.role][0]}${U.f?' · '+F[U.f].s:''}</span><br><button class="btn g s" style="margin-top:8px" onclick="logout()">Se déconnecter</button>${FB_ON?' <button class="btn g s" onclick="myPin()">Mon PIN</button>':''}</div>`:''}</aside>
  <main style="--ac:${F[P]?F[P].c:'#d4b055'}">${(PG[P]||PG.home)()}</main>`;
  if(P=='map')mapInit()}
 
 /* ===== PAGES ===== */
 const PG={
 home(){
- const mine=U?.medals||[];
+ const mine=U?medals(U.id):[];
  return `<div class=ban><img src="img/banniere.png" alt="Prestige Compagnie"></div><div class=hero style="padding-top:8px"><h1>${U?`Bonjour ${e(U.name.split(' ')[0])}.`:'Trois filiales, une seule ville.'}</h1>
  <p class=mu>${U?`Voici l’activité de la compagnie.`:'Trois filiales au service de la ville : balisage, restauration et presse. Consulte nos activités et le menu de la Roue des Délices.'}</p></div>
  <div class=grid>${Object.entries(F).map(([k,f])=>`<div class="card f" style="--ac:${f.c}"><div class=lgo>${lg(k)}</div><h3>${f.n}</h3><p class=mu>${f.d}</p>
@@ -129,6 +136,10 @@ menu(){
 login(){return `<form class="card login" onsubmit="doLogin(event)"><div class=lgo style="width:110px;height:110px;margin:0 auto 6px">${lg('main')}</div><h2>Connexion</h2><p class=mu>Espace réservé aux salariés.</p>
  <label>Identifiant</label><input id=li placeholder="Ex : S.Mouveau" autocomplete=username required>
  <label>Code PIN</label><input id=lp type=password autocomplete=current-password required><button class=btn>Se connecter</button></form>`},
+
+setup(){return `<form class="card login" onsubmit="doSetup(event)"><h2>Première installation</h2><p class=mu>Crée le compte administrateur. Cet écran disparaît ensuite.</p>
+ <label>Nom complet</label><input id=sn oninput="$('si').value=genId(this.value)" required><label>Identifiant</label><input id=si required>
+ <label>PIN (4 caractères minimum)</label><input id=sp type=password minlength=4 required><button class=btn>Créer l’administrateur</button></form>`},
 
 map(){
  const ev=D.events.filter(x=>x.x!=null).sort((a,b)=>b.d.localeCompare(a.d));
@@ -170,9 +181,9 @@ ges(){
  <div><label>Grade</label><input id=ug placeholder="Ex : Agent"></div><button class=btn>Créer</button></form>
  <div class=tw><table><tr><th>Nom</th><th>ID</th><th>Rôle</th><th>Filiale</th><th>Grade</th><th></th></tr>
  ${D.users.map(u=>`<tr><td>${e(u.name)}</td><td>${e(u.id)}</td><td><select onchange="setRole('${u.id}',this.value)">${Object.entries(R).map(([k,r])=>`<option value=${k}${k==u.role?' selected':''}>${r[0]}</option>`).join('')}</select></td>
- <td>${u.f?F[u.f].s:'—'}</td><td>${e(u.grade)}</td><td><button class="btn g s" onclick="chPin('${u.id}')">PIN</button> ${u.id!=U.id?`<button class="btn g s" onclick="delUser('${u.id}')">Supprimer</button>`:''}</td></tr>`).join('')}</table></div>
+ <td>${u.f?F[u.f].s:'—'}</td><td>${e(u.grade)}</td><td>${FB_ON?'':`<button class="btn g s" onclick="chPin('${u.id}')">PIN</button> `}${u.id!=U.id?`<button class="btn g s" onclick="delUser('${u.id}')">Supprimer</button>`:''}</td></tr>`).join('')}</table></div>
  <h3 class=st>Logos</h3><div class=grid>${['main',...Object.keys(F)].map(k=>`<div class=card><b>${k=='main'?'Prestige Compagnie':F[k].n}</b><div class=lgo>${lg(k)}</div><input type=file accept="image/*" onchange="setLogo('${k}',this)">${D.logos[k]?`<button class="btn g s" onclick="delete D.logos['${k}'];save()">Retirer</button>`:''}</div>`).join('')}</div>
- <h3 class=st>Sauvegarde</h3><div class="card row"><button class=btn onclick="exportJ()">Exporter les données</button><div><label>Importer un fichier</label><input type=file accept=.json onchange="importJ(this)"></div></div>`}
+ <h3 class=st>Sauvegarde</h3><div class="card row"><button class=btn onclick="exportJ()">Exporter les données</button>${FB_ON?'':'<div><label>Importer un fichier</label><input type=file accept=.json onchange="importJ(this)"></div>'}</div>`}
 };
 Object.keys(F).forEach(k=>PG[k]=()=>fil(k));
 
@@ -188,7 +199,7 @@ function fil(k){
  <span>🚗 ${e(p.veh)}</span><span>👥 ${p.crew.map(i=>e(nm(i))).join(', ')}</span>${p.n?`<span class=mu>${e(p.n)}</span>`:''}
  <small>${new Date(p.t).toLocaleString('fr-FR')} · ${e(nm(p.by))}</small>
  <div><button class="btn g s" onclick="tgl('${p.id}')">${p.st=='En service'?'Terminer':'Reprendre'}</button> ${cd||p.by==U.id?`<button class="btn g s" onclick="del('patrols','${p.id}')">Supprimer</button>`:''}</div></div>`).join('')||'<p class=mu>Aucune fiche. Crée la première depuis le formulaire.</p>'}</div></div>
- <h3 class=st>Effectif</h3><div class=tw><table><tr><th>Nom</th><th>Rôle</th><th>Grade</th><th>Médailles</th></tr>${mem.map(u=>`<tr><td>${e(u.name)}</td><td>${R[u.role][0]}</td><td>${e(u.grade)}</td><td>${u.medals.length?'🏅 '+u.medals.length:'—'}</td></tr>`).join('')}</table></div>
+ <h3 class=st>Effectif</h3><div class=tw><table><tr><th>Nom</th><th>Rôle</th><th>Grade</th><th>Médailles</th></tr>${mem.map(u=>`<tr><td>${e(u.name)}</td><td>${R[u.role][0]}</td><td>${e(u.grade)}</td><td>${medals(u.id).length?'🏅 '+medals(u.id).length:'—'}</td></tr>`).join('')}</table></div>
  <h3 class=st>Événements et médailles</h3>
  ${cd?`<form class=card onsubmit="addEvent(event,'${k}')"><div class=row style="display:flex;gap:10px"><div style="flex:2"><label>Événement</label><input id=et required></div><div><label>Date</label><input id=ed type=date value="${today()}" required></div><div><label>Médaille décernée</label><input id=em placeholder="Facultatif"></div></div>
  <label>Récompensés</label><div class=chk>${mem.map(u=>`<label><input type=checkbox class=ea value="${u.id}">${e(u.name)}</label>`).join('')}</div><button class=btn>Créer l’événement</button>${k=='BRB'?'<small>Pour le placer sur la carte, utilise « Poser un événement » dans Carte interactive.</small>':''}</form>`:''}
@@ -199,23 +210,33 @@ function fil(k){
  <div class=tw><table>${D.menu.map((m,i)=>`<tr><td>${e(m.n)}</td><td>${e(m.c)}</td><td>${m.p} $</td><td><a style="cursor:pointer" onclick="D.menu.splice(${i},1);save()">✕</a></td></tr>`).join('')}</table></div>`:''}`}
 
 /* ===== ACTIONS ===== */
-function doLogin(ev){ev.preventDefault();const u=D.users.find(x=>x.id.toLowerCase()==v('li').toLowerCase()&&x.pin==v('lp'));
+async function doLogin(ev){ev.preventDefault();
+ if(FB_ON){try{await FBX.login(v('li'),v('lp'));P='home'}catch(x){alert('Identifiant ou PIN incorrect.')}return}
+ const u=D.users.find(x=>x.id.toLowerCase()==v('li').toLowerCase()&&x.pin==v('lp'));
  if(!u)return alert('Identifiant ou PIN incorrect.');U=u;try{sessionStorage.s=u.id}catch(x){}go('home')}
-function logout(){U=null;try{delete sessionStorage.s}catch(x){}go('home')}
+function logout(){if(FB_ON){FBX.logout();P='home';return}U=null;try{delete sessionStorage.s}catch(x){}go('home')}
+async function doSetup(ev){ev.preventDefault();const id=v('si');if(!/^[A-Za-z0-9._-]+$/.test(id))return alert('Identifiant : lettres, chiffres, point et tiret uniquement.');
+ try{await FBX.setup(v('sn'),id,v('sp'));P='home';render()}catch(x){alert('Échec : '+(x.code||x.message))}}
+async function myPin(){const p=prompt('Nouveau PIN (4 caractères minimum)');if(!p||p.length<4)return;try{await FBX.setPin(p);alert('PIN modifié.')}catch(x){alert('Déconnecte-toi, reconnecte-toi, puis réessaie.')}}
 function addPatrol(ev,k){ev.preventDefault();const crew=[...document.querySelectorAll('.pm:checked')].map(c=>c.value);
  if(!crew.length)return alert('Sélectionne au moins un membre d’effectif.');
  D.patrols.push({id:uid(),f:k,c:v('pc'),veh:v('pv'),crew,n:v('pn'),st:'En service',t:Date.now(),by:U.id});save()}
 function tgl(id){const p=D.patrols.find(x=>x.id==id);p.st=p.st=='En service'?'Terminée':'En service';save()}
 function addEvent(ev,k){ev.preventDefault();const aw=[...document.querySelectorAll('.ea:checked')].map(c=>c.value),m=v('em'),x={id:uid(),f:k,t:v('et'),d:v('ed'),m,aw};
- D.events.push(x);if(m)aw.forEach(i=>usr(i).medals.push({m,e:x.t,d:x.d}));save()}
+ D.events.push(x);save()}
 function addVeh(ev,k){ev.preventDefault();D.veh[k].push(v('vn'));save()}
 function addMenu(ev){ev.preventDefault();D.menu.push({n:v('mn'),p:parseFloat(v('mp')),c:v('mc')});save()}
 function addNews(ev){ev.preventDefault();D.news.push({id:uid(),t:v('nt'),x:v('nx'),d:new Date().toLocaleDateString('fr-FR'),by:U.id});save()}
 function addTx(ev){ev.preventDefault();const f=v('xf');if(!canD(f))return;
  D.tx.push({id:uid(),f,a:parseFloat(v('xa'))*parseInt(v('xs')),l:v('xl'),d:new Date().toLocaleDateString('fr-FR'),by:U.id,t:Date.now()});save()}
-const genId=n=>{const p=n.trim().split(/\s+/);return p[0]?p[0][0].toUpperCase()+(p.length>1?'.'+p.slice(1).join(''):''):''};
-function addUser(ev){ev.preventDefault();const id=v('ui');if(usr(id))return alert('Cet identifiant existe déjà.');
- D.users.push({id,name:v('un'),pin:v('up'),role:v('ur'),f:v('uf'),grade:v('ug')||'Membre',medals:[]});save()}
+const genId=n=>{const p=n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z\s-]/g,'').trim().split(/\s+/);return p[0]?p[0][0].toUpperCase()+(p.length>1?'.'+p.slice(1).join(''):''):''};
+async function addUser(ev){ev.preventDefault();const id=v('ui');if(D.users.some(x=>x.id.toLowerCase()==id.toLowerCase()))return alert('Cet identifiant existe déjà.');
+ if(!/^[A-Za-z0-9._-]+$/.test(id))return alert('Identifiant : lettres, chiffres, point et tiret uniquement.');
+ const u={id,name:v('un'),role:v('ur'),f:v('uf'),grade:v('ug')||'Membre'};
+ if(FB_ON){if(v('up').length<4)return alert('PIN : 4 caractères minimum.');
+  try{await FBX.createAccount(id,v('up'))}catch(x){return alert(x.code=='auth/email-already-in-use'?'Ce compte existe déjà dans Firebase (ancien compte supprimé ?). Choisis un autre identifiant.':'Création impossible : '+(x.code||x.message))}}
+ else{u.pin=v('up');u.medals=[]}
+ D.users.push(u);save()}
 function setRole(id,r){usr(id).role=r;save()}
 function chPin(id){const p=prompt('Nouveau PIN pour '+id);if(p){usr(id).pin=p;save()}}
 function delUser(id){if(confirm('Supprimer le compte '+id+' ?')){D.users=D.users.filter(u=>u.id!=id);save()}}
@@ -232,7 +253,7 @@ function info(id){const x=D.events.find(y=>y.id==id);if(!x||moved>6)return;
  $('inf').innerHTML=`<h4>${e(x.t)}</h4><small>${F[x.f].n} · ${x.d}</small>${x.m?`<span>🏅 ${e(x.m)}</span>`:''}${x.aw?.length?`<span>${x.aw.map(i=>e(nm(i))).join(', ')}</span>`:''}
  <button class="btn g s" onclick="render()">Retour à la liste</button>${canD(x.f)?`<button class="btn g s" onclick="del('events','${x.id}')">Supprimer</button>`:''}`}
 let moved=0;
-function mapInit(){const v=$('mv');let drag=null,pts={},pd=0;mapFit();
+function mapInit(){const v=$('mv');let drag=null,pts={},pd=0;mKeep?mApply():(mapFit(),mKeep=true);
  v.onwheel=ev=>{ev.preventDefault();zoom(ev.clientX,ev.clientY,ev.deltaY<0?1.2:1/1.2)};
  const zoom=(cx,cy,f)=>{const r=v.getBoundingClientRect(),ns=Math.max(Math.min(v.clientWidth,v.clientHeight)/2000*.8,Math.min(3,mS*f)),mx=cx-r.left,my=cy-r.top;mX=mx-(mx-mX)*ns/mS;mY=my-(my-mY)*ns/mS;mS=ns;mApply()};
  v.onpointerdown=ev=>{v.setPointerCapture(ev.pointerId);pts[ev.pointerId]=ev;moved=0;drag={x:ev.clientX,y:ev.clientY};pd=0};
@@ -241,6 +262,53 @@ function mapInit(){const v=$('mv');let drag=null,pts={},pd=0;mapFit();
   pts[ev.pointerId]=ev;mX+=ev.clientX-drag.x;mY+=ev.clientY-drag.y;moved+=Math.abs(ev.clientX-drag.x)+Math.abs(ev.clientY-drag.y);drag={x:ev.clientX,y:ev.clientY};mApply()};
  v.onpointerup=ev=>{delete pts[ev.pointerId];pd=0;if(moved<6&&placing&&!ev.target.closest('.mk')){const r=v.getBoundingClientRect(),x=(ev.clientX-r.left-mX)/mS/20,y=(ev.clientY-r.top-mY)/mS/20;
   const t=prompt('Titre de l’événement ?');if(t){const f=lvl()>=3||U.f=='BRB'?'BRB':U.f;D.events.push({id:uid(),f,t,d:today(),m:'',aw:[],x:+x.toFixed(2),y:+y.toFixed(2)})}placing=false;save()}}}
+render();
+</script>
+
+<script type="module">
+const C=window.FIREBASE_CONFIG;
+if(C){
+const B='https://www.gstatic.com/firebasejs/10.12.2/';
+const {initializeApp}=await import(B+'firebase-app.js'),A=await import(B+'firebase-auth.js'),S=await import(B+'firebase-firestore.js');
+const app=initializeApp(C),auth=A.getAuth(app),db=S.getFirestore(app);
+const COLS=['users','patrols','events','tx','news'],em=id=>id.toLowerCase()+'@prestige-compagnie.com',pw=p=>p+'#Prestige';
+const key=(c,x)=>c=='users'?x.id.toLowerCase():x.id;
+let snap={},unsubs=[],loaded={},ready=false,cfgJ='',settingUp=false,sec=null;
+const fail=x=>{console.warn(x);alert('Action refusée par le serveur ('+(x.code||'erreur')+').')};
+const cfgOf=()=>JSON.stringify({veh:D.veh,menu:D.menu,logos:D.logos});
+
+/* Données publiques : menu, véhicules, logos */
+S.onSnapshot(S.doc(db,'cfg','main'),d=>{const x=d.data();if(x){D.veh={BRB:[],RD:[],PR:[],...(x.veh||{})};D.menu=x.menu||[];D.logos=x.logos||{};cfgJ=cfgOf()}softRender()},()=>{});
+try{SETUP=!(await S.getDoc(S.doc(db,'meta','init'))).exists()}catch(x){}
+
+function listen(u){unsubs.forEach(f=>f());unsubs=[];loaded={};ready=false;AUTHID=u.email.split('@')[0];
+ const done=c=>{loaded[c]=1;ready=COLS.every(k=>loaded[k]);if(ready&&!D.users.find(x=>x.id.toLowerCase()==AUTHID))A.signOut(auth)};
+ COLS.forEach(c=>unsubs.push(S.onSnapshot(S.collection(db,c),qs=>{snap[c]={};D[c]=qs.docs.map(d=>{const x=d.data();snap[c][d.id]=JSON.stringify(x);return x});done(c);softRender()},err=>{D[c]=[];snap[c]={};done(c)})))}
+A.onAuthStateChanged(auth,u=>{if(settingUp)return;
+ if(!u){unsubs.forEach(f=>f());unsubs=[];ready=false;AUTHID=null;['users','patrols','events','tx','news'].forEach(c=>D[c]=[]);snap={};render();return}
+ listen(u)});
+
+/* Envoie uniquement ce qui a changé */
+function sync(){if(!ready)return;
+ for(const c of COLS){const nw={},old=snap[c]||{};D[c].forEach(x=>nw[key(c,x)]=x);
+  for(const k in nw){const j=JSON.stringify(nw[k]);if(old[k]!==j){old[k]=j;S.setDoc(S.doc(db,c,k),JSON.parse(j)).catch(fail)}}
+  for(const k in old)if(!(k in nw)){delete old[k];S.deleteDoc(S.doc(db,c,k)).catch(fail)}
+  snap[c]=old}
+ const cj=cfgOf();if(cj!==cfgJ){cfgJ=cj;S.setDoc(S.doc(db,'cfg','main'),JSON.parse(cj)).catch(fail)}}
+
+window.FBX={sync,
+ login:(id,pin)=>A.signInWithEmailAndPassword(auth,em(id),pw(pin)),
+ logout:()=>A.signOut(auth),
+ async createAccount(id,pin){sec=sec||A.getAuth(initializeApp(C,'sec'));await A.createUserWithEmailAndPassword(sec,em(id),pw(pin));await A.signOut(sec)},
+ setPin:p=>A.updatePassword(auth.currentUser,pw(p)),
+ async setup(name,id,pin){settingUp=true;try{
+   await A.createUserWithEmailAndPassword(auth,em(id),pw(pin));
+   await S.setDoc(S.doc(db,'users',id.toLowerCase()),{id,name,role:'admin',f:'',grade:'Administrateur'});
+   await S.setDoc(S.doc(db,'meta','init'),{t:Date.now()});
+   const sd=seed();await S.setDoc(S.doc(db,'cfg','main'),{veh:sd.veh,menu:sd.menu,logos:{}})}
+  finally{settingUp=false}
+  SETUP=false;listen(auth.currentUser)}};
+}
 render();
 </script>
 </body>
