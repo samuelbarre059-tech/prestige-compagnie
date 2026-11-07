@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Prestige Compagnie — Intranet & Panel Agent</title>
+  <title>Prestige Compagnie — Intranet & Management System</title>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -12,7 +12,6 @@
       --bg-card-hover: #1c2742;
       --accent-gold: #d4af37;
       --accent-gold-light: #f3e5ab;
-      --accent-red: #8b0000;
       --text-main: #f0f4f8;
       --text-muted: #94a3b8;
       --border-color: rgba(212, 175, 55, 0.2);
@@ -32,7 +31,7 @@
       border-radius: 16px; padding: 40px; width: 100%; max-width: 420px; text-align: center;
       box-shadow: 0 20px 50px rgba(0,0,0,0.8);
     }
-    .login-logo { max-width: 280px; margin-bottom: 25px; }
+    .login-logo { max-width: 280px; max-height: 90px; margin-bottom: 25px; object-fit: contain; }
     .login-card h2 { font-family: 'Cinzel', serif; color: var(--accent-gold); margin-bottom: 8px; font-size: 1.5rem; }
     .login-card p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 25px; }
     .form-group { margin-bottom: 20px; text-align: left; }
@@ -54,7 +53,7 @@
       display: flex; flex-direction: column; padding: 20px 0; position: fixed; height: 100vh;
     }
     .brand-header { padding: 0 20px 20px; border-bottom: 1px solid var(--border-color); text-align: center; }
-    .brand-header img { max-width: 100%; height: auto; }
+    .brand-header img { max-width: 100%; max-height: 70px; object-fit: contain; }
     .nav-menu { list-style: none; padding: 20px 10px; flex-grow: 1; overflow-y: auto; }
     .nav-item {
       padding: 12px 16px; border-radius: 8px; margin-bottom: 6px; cursor: pointer; display: flex;
@@ -85,17 +84,21 @@
       border-radius: 12px; overflow: hidden; background-size: cover; background-position: center;
     }
     .map-marker {
-      position: absolute; width: 20px; height: 20px; border-radius: 50%; background: var(--accent-gold);
+      position: absolute; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-gold);
       border: 2px solid white; transform: translate(-50%, -50%); cursor: pointer; box-shadow: 0 0 10px rgba(0,0,0,0.8);
+      display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; color: black;
     }
     .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
     .badge-brb { background: rgba(212, 175, 55, 0.2); color: var(--accent-gold); }
     .badge-reporter { background: rgba(0, 150, 255, 0.2); color: #0096ff; }
     .badge-delices { background: rgba(255, 105, 180, 0.2); color: #ff69b4; }
+    .badge-admin { background: rgba(139, 0, 0, 0.3); color: #ff6b6b; }
 
     /* CHECKBOX LIST EFFECTIFS */
     .checkbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; max-height: 150px; overflow-y: auto; background: #070a12; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); }
     .checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; }
+
+    .filiale-logo-header { height: 45px; object-fit: contain; margin-bottom: 10px; }
   </style>
 </head>
 <body>
@@ -108,7 +111,7 @@
       <p>Connectez-vous avec vos identifiants Prestige Compagnie.</p>
       <form onsubmit="handleLogin(event)">
         <div class="form-group">
-          <label>Identifiant</label>
+          <label>Identifiant (Prénom.Nom)</label>
           <input type="text" id="loginUser" class="form-control" placeholder="ex: S.Mouveau" required>
         </div>
         <div class="form-group">
@@ -131,7 +134,7 @@
       <li class="nav-item" onclick="switchTab('calendars')">📅 Ventes Calendriers</li>
       <li class="nav-item" onclick="switchTab('reporter')">🎙️ Le Petit Reporter</li>
       <li class="nav-item" onclick="switchTab('delices')">🍩 La Roue des Délices</li>
-      <li class="nav-item" onclick="switchTab('finances')">💰 Trésorerie Globale</li>
+      <li class="nav-item" onclick="switchTab('finances')">💰 Trésoreries Filiales</li>
       <li class="nav-item" onclick="switchTab('effectifs')">👥 Gestion Effectifs</li>
       <li class="nav-item" onclick="switchTab('config')" id="navConfig" style="display:none;">⚙️ Configuration</li>
     </ul>
@@ -155,7 +158,7 @@
       </div>
       <div class="grid-cards">
         <div class="card">
-          <div style="color: var(--text-muted); font-size: 0.85rem;">Solde Trésorerie</div>
+          <div style="color: var(--text-muted); font-size: 0.85rem;">Trésorerie Consolidée</div>
           <div class="card-stat" id="statSolde">0 €</div>
         </div>
         <div class="card">
@@ -167,42 +170,39 @@
           <div class="card-stat" id="statCalendriers">0</div>
         </div>
         <div class="card">
-          <div style="color: var(--text-muted); font-size: 0.85rem;">Agents Enregistrés</div>
+          <div style="color: var(--text-muted); font-size: 0.85rem;">Total Effectifs</div>
           <div class="card-stat" id="statAgents">0</div>
         </div>
       </div>
       <div class="card">
         <h3>🏆 Vos Médailles & Distinctions</h3>
-        <div id="medalsList" style="display: flex; gap: 15px; margin-top: 15px;">
-          <!-- Injecté via JS -->
-        </div>
+        <div id="medalsList" style="display: flex; gap: 15px; margin-top: 15px; flex-wrap: wrap;"></div>
       </div>
     </section>
 
     <!-- BRB & CARTE TACTIQUE -->
     <section id="brb" class="tab-section">
-      <div class="section-title">Brigade Rapide de Balisage</div>
+      <div class="section-title">
+        <span>Brigade Rapide de Balisage</span>
+        <img id="logoBRBHeader" class="filiale-logo-header" src="" alt="">
+      </div>
       <div class="grid-cards">
         <div class="card" style="grid-column: span 2;">
           <h3>🗺️ Carte Tactique de Kelleys Island</h3>
-          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">Cliquez sur la carte pour poser un balisage en direct.</p>
-          <div class="map-container" id="kelleysMap" onclick="addMarker(event)">
-            <!-- Marqueurs dynamiques -->
-          </div>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">Cliquez sur la carte pour poser un balisage d'événement.</p>
+          <div class="map-container" id="kelleysMap" onclick="addMarker(event)"></div>
         </div>
         <div class="card">
           <h3 id="formPatrolTitle">➕ Nouvelle Patrouille</h3>
           <form onsubmit="savePatrouille(event)" style="margin-top: 15px;">
             <input type="hidden" id="editPatrolId">
             <div class="form-group">
-              <label>Véhicule</label>
-              <input type="text" id="patrolVeh" class="form-control" placeholder="ex: BRB-01 (Ford Van)" required>
+              <label>Véhicule de Service</label>
+              <select id="patrolVeh" class="form-control" required></select>
             </div>
             <div class="form-group">
               <label>Effectifs Engagés</label>
-              <div class="checkbox-grid" id="patrolAgentsChecklist">
-                <!-- Checkboxes générées dynamiquement -->
-              </div>
+              <div class="checkbox-grid" id="patrolAgentsChecklist"></div>
             </div>
             <div class="form-group">
               <label>Statut</label>
@@ -277,33 +277,97 @@
 
     <!-- LE PETIT REPORTER -->
     <section id="reporter" class="tab-section">
-      <div class="section-title">Le Petit Reporter — Média & Presse</div>
+      <div class="section-title">
+        <span>Le Petit Reporter — Média & Presse</span>
+        <img id="logoReporterHeader" class="filiale-logo-header" src="" alt="">
+      </div>
       <div class="card">
-        <h3>🎥 Articles & Reportages en cours</h3>
-        <p style="color: var(--text-muted); margin-top: 10px;">Gestion des interviews, devis de couverture médiatique et dépêches d'actualité.</p>
+        <h3>🎥 Articles, Factures & Reportages en cours</h3>
+        <p style="color: var(--text-muted); margin-top: 10px;">Module éditorial, enregistrement des prestations médias et reportages.</p>
       </div>
     </section>
 
-    <!-- LA ROUE DES DÉLICES -->
+    <!-- LA ROUE DES DÉLICES (MENU CIVIL & STOCKS) -->
     <section id="delices" class="tab-section">
-      <div class="section-title">La Roue des Délices — Catering</div>
-      <div class="card">
-        <h3>🥐 Caisse Événementielle</h3>
-        <p style="color: var(--text-muted); margin-top: 10px;">Enregistrement des recettes et stocks lors des événements.</p>
+      <div class="section-title">
+        <span>La Roue des Délices — Catering</span>
+        <img id="logoDelicesHeader" class="filiale-logo-header" src="" alt="">
+      </div>
+      <div class="grid-cards">
+        <div class="card">
+          <h3>📜 Menu Proposé aux Civils</h3>
+          <table style="margin-top: 15px;">
+            <thead>
+              <tr>
+                <th>Produit</th>
+                <th>Prix (€)</th>
+                <th>Disponibilité</th>
+              </tr>
+            </thead>
+            <tbody id="tableCivilMenu"></tbody>
+          </table>
+        </div>
+        <div class="card" style="grid-column: span 2;">
+          <h3>📦 Gestion des Stocks & Ajout Produit</h3>
+          <form onsubmit="saveProductStock(event)" style="margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end;">
+            <div class="form-group" style="margin: 0;">
+              <label>Nom Produit</label>
+              <input type="text" id="prodName" class="form-control" placeholder="ex: Muffin Chocolat" required>
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label>Prix (€)</label>
+              <input type="number" id="prodPrice" class="form-control" placeholder="5" required>
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label>Stock Initial</label>
+              <input type="number" id="prodStock" class="form-control" placeholder="50" required>
+            </div>
+            <button type="submit" class="btn-gold">Mettre à jour</button>
+          </form>
+          <table style="margin-top: 20px;">
+            <thead>
+              <tr>
+                <th>Article</th>
+                <th>Prix unitaire</th>
+                <th>Stock restant</th>
+                <th>Vendre 1 u.</th>
+              </tr>
+            </thead>
+            <tbody id="tableDelicesStocks"></tbody>
+          </table>
+        </div>
       </div>
     </section>
 
-    <!-- TRÉSORERIE GLOBALE -->
+    <!-- TRÉSORERIE DEÉCOUPÉE PAR FILIALE -->
     <section id="finances" class="tab-section">
-      <div class="section-title">Grand Livre Financier Consolidé</div>
+      <div class="section-title">Grand Livre Financier par Filiale</div>
+      <div class="grid-cards">
+        <div class="card">
+          <div style="color: var(--text-muted); font-size: 0.85rem;">Trésorerie BRB</div>
+          <div class="card-stat" id="soldeBRB">0 €</div>
+        </div>
+        <div class="card">
+          <div style="color: var(--text-muted); font-size: 0.85rem;">Trésorerie Le Petit Reporter</div>
+          <div class="card-stat" id="soldeReporter">0 €</div>
+        </div>
+        <div class="card">
+          <div style="color: var(--text-muted); font-size: 0.85rem;">Trésorerie La Roue des Délices</div>
+          <div class="card-stat" id="soldeDelices">0 €</div>
+        </div>
+        <div class="card">
+          <div style="color: var(--text-muted); font-size: 0.85rem;">Trésorerie Admin / Holding</div>
+          <div class="card-stat" id="soldeAdmin">0 €</div>
+        </div>
+      </div>
       <div class="card">
-        <h3>💰 Entrées & Sorties de Caisse</h3>
+        <h3>💰 Enregistrement des Transactions</h3>
         <table style="margin-top: 15px;">
           <thead>
             <tr>
               <th>Date</th>
               <th>Filiale</th>
-              <th>Libellé / Motif</th>
+              <th>Motif</th>
               <th>Auteur</th>
               <th>Montant</th>
             </tr>
@@ -313,49 +377,114 @@
       </div>
     </section>
 
-    <!-- GESTION EFFECTIFS -->
+    <!-- GESTION EFFECTIFS & CRÉATION -->
     <section id="effectifs" class="tab-section">
-      <div class="section-title">Gestion des Effectifs & Armoire à Médailles</div>
-      <div class="card">
-        <h3>👥 Annuaire des Agents</h3>
-        <table style="margin-top: 15px;">
-          <thead>
-            <tr>
-              <th>Identifiant</th>
-              <th>Nom Complet</th>
-              <th>Filiale Principal</th>
-              <th>Grade</th>
-              <th>Actions / Médailles</th>
-            </tr>
-          </thead>
-          <tbody id="tableAgents"></tbody>
-        </table>
+      <div class="section-title">Gestion des Effectifs & Nouveaux Membres</div>
+      <div class="grid-cards">
+        <div class="card">
+          <h3>➕ Enregistrer un Membre</h3>
+          <form onsubmit="saveNewAgent(event)" style="margin-top: 15px;">
+            <div class="form-group">
+              <label>Identifiant (ex: S.Mouveau)</label>
+              <input type="text" id="agId" class="form-control" placeholder="P.Nom" required>
+            </div>
+            <div class="form-group">
+              <label>Nom complet</label>
+              <input type="text" id="agName" class="form-control" placeholder="Prénom Nom" required>
+            </div>
+            <div class="form-group">
+              <label>Code PIN (4 chiffres)</label>
+              <input type="text" id="agPin" class="form-control" placeholder="1234" required>
+            </div>
+            <div class="form-group">
+              <label>Filiale Principale</label>
+              <select id="agFiliale" class="form-control">
+                <option value="BRB">BRB</option>
+                <option value="Le Petit Reporter">Le Petit Reporter</option>
+                <option value="La Roue des Délices">La Roue des Délices</option>
+                <option value="Admin">Admin / Direction</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Grade / Fonction</label>
+              <input type="text" id="agRole" class="form-control" placeholder="ex: Agent, Responsable, PDG" required>
+            </div>
+            <button type="submit" class="btn-gold">Créer l'accès membre</button>
+          </form>
+        </div>
+        <div class="card" style="grid-column: span 2;">
+          <h3>👥 Liste des Membres Enregistrés</h3>
+          <table style="margin-top: 15px;">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nom</th>
+                <th>PIN</th>
+                <th>Filiale</th>
+                <th>Grade</th>
+                <th>Distinctions</th>
+              </tr>
+            </thead>
+            <tbody id="tableAgents"></tbody>
+          </table>
+        </div>
       </div>
     </section>
 
-    <!-- CONFIGURATION MÉDIAS -->
+    <!-- CONFIGURATION MÉDIAS & VÉHICULES -->
     <section id="config" class="tab-section">
-      <div class="section-title">⚙️ Configuration des Visuels (PostImage / Imgur)</div>
-      <div class="card" style="max-width: 600px;">
-        <h3>Intégration des Liens d'Images</h3>
-        <form onsubmit="saveConfig(event)" style="margin-top: 15px;">
-          <div class="form-group">
-            <label>Logo Prestige Compagnie (URL)</label>
-            <input type="url" id="cfgLogo" class="form-control" placeholder="https://i.postimg.cc/...">
-          </div>
-          <div class="form-group">
-            <label>Carte Kelleys Island PNG (URL)</label>
-            <input type="url" id="cfgMap" class="form-control" placeholder="https://i.postimg.cc/...">
-          </div>
-          <button type="submit" class="btn-gold">Enregistrer les URLs</button>
-        </form>
+      <div class="section-title">⚙️ Configuration des Visuels & Véhicules</div>
+      <div class="grid-cards">
+        <div class="card">
+          <h3>Logos & Images (PostImage)</h3>
+          <form onsubmit="saveConfig(event)" style="margin-top: 15px;">
+            <div class="form-group">
+              <label>Logo Principal Prestige (URL)</label>[cite: 1]
+              <input type="url" id="cfgLogo" class="form-control">
+            </div>
+            <div class="form-group">
+              <label>Logo BRB (URL)</label>
+              <input type="url" id="cfgLogoBRB" class="form-control">
+            </div>
+            <div class="form-group">
+              <label>Logo Le Petit Reporter (URL)</label>
+              <input type="url" id="cfgLogoReporter" class="form-control">
+            </div>
+            <div class="form-group">
+              <label>Logo La Roue des Délices (URL)</label>
+              <input type="url" id="cfgLogoDelices" class="form-control">
+            </div>
+            <div class="form-group">
+              <label>Carte Kelleys Island PNG (URL)</label>
+              <input type="url" id="cfgMap" class="form-control">
+            </div>
+            <button type="submit" class="btn-gold">Sauvegarder la Config</button>
+          </form>
+        </div>
+        <div class="card" style="grid-column: span 2;">
+          <h3>🚘 Véhicules par Filiale (un par ligne)</h3>
+          <form onsubmit="saveVehicles(event)" style="margin-top: 15px;">
+            <div class="form-group">
+              <label>Véhicules BRB</label>
+              <textarea id="cfgVehBRB" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Véhicules Le Petit Reporter</label>
+              <textarea id="cfgVehReporter" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Véhicules La Roue des Délices</label>
+              <textarea id="cfgVehDelices" class="form-control" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn-gold">Enregistrer la liste flotte</button>
+          </form>
+        </div>
       </div>
     </section>
 
   </main>
 
   <script>
-    // DONNÉES EN MEMOIRE LOCALSTORAGE
     let currentUser = null;
     let data = JSON.parse(localStorage.getItem('prestige_data')) || {
       agents: [
@@ -366,7 +495,16 @@
       sales: [],
       finances: [],
       markers: [],
-      config: { logo: '', map: '' }
+      products: [
+        { name: 'Muffin Chocolat', price: 5, stock: 40 },
+        { name: 'Café Chaud', price: 3, stock: 100 }
+      ],
+      config: { 
+        logo: '', logoBRB: '', logoReporter: '', logoDelices: '', map: '',
+        vehBRB: ['BRB-01 (Ford Van)', 'BRB-02 (Fourgon Balisage)'],
+        vehReporter: ['PR-01 (Presse SUV)'],
+        vehDelices: ['RD-01 (Foodtruck)']
+      }
     };
 
     function saveData() {
@@ -374,7 +512,6 @@
       renderAll();
     }
 
-    // LOGIN & NAVIGATION
     function handleLogin(e) {
       e.preventDefault();
       const u = document.getElementById('loginUser').value.trim();
@@ -392,7 +529,7 @@
         }
         renderAll();
       } else {
-        alert('Identifiant ou code PIN incorrect.');
+        alert('Identifiant ou PIN erroné.');
       }
     }
 
@@ -402,16 +539,20 @@
       document.getElementById(tabId).classList.add('active');
     }
 
-    // GESTION PATROUILLES
-    function renderPatrolChecklist() {
-      const container = document.getElementById('patrolAgentsChecklist');
-      container.innerHTML = data.agents.map(a => `
-        <label class="checkbox-item">
-          <input type="checkbox" value="${a.name}" class="patrol-agent-cb"> ${a.name} (${a.filiale})
-        </label>
-      `).join('');
+    // GESTION AGENTS
+    function saveNewAgent(e) {
+      e.preventDefault();
+      const id = document.getElementById('agId').value.trim();
+      const name = document.getElementById('agName').value.trim();
+      const pin = document.getElementById('agPin').value.trim();
+      const filiale = document.getElementById('agFiliale').value;
+      const role = document.getElementById('agRole').value.trim();
+
+      data.agents.push({ id, name, pin, filiale, role, medals: [] });
+      saveData();
     }
 
+    // GESTION BRB & VEHICULES
     function savePatrouille(e) {
       e.preventDefault();
       const editId = document.getElementById('editPatrolId').value;
@@ -426,30 +567,14 @@
         if (p) { p.veh = veh; p.agents = selectedAgents; p.status = status; }
       } else {
         data.patrouilles.push({
-          id: Date.now(),
-          veh: veh,
-          agents: selectedAgents,
-          status: status,
-          time: new Date().toLocaleTimeString('fr-FR')
+          id: Date.now(), veh, agents: selectedAgents, status, time: new Date().toLocaleTimeString('fr-FR')
         });
       }
       document.getElementById('editPatrolId').value = '';
       saveData();
     }
 
-    function editPatrol(id) {
-      const p = data.patrouilles.find(x => x.id == id);
-      if (!p) return;
-      document.getElementById('editPatrolId').value = p.id;
-      document.getElementById('patrolVeh').value = p.veh;
-      document.getElementById('patrolStatus').value = p.status;
-      document.querySelectorAll('.patrol-agent-cb').forEach(cb => {
-        cb.checked = p.agents.includes(cb.value);
-      });
-      document.getElementById('formPatrolTitle').innerText = '✏️ Modifier la Patrouille';
-    }
-
-    // VENTES CALENDRIERS
+    // CALENDRIERS
     function saveCalendarSale(e) {
       e.preventDefault();
       const client = document.getElementById('saleClient').value;
@@ -458,47 +583,94 @@
 
       data.sales.push({ date: new Date().toLocaleDateString('fr-FR'), seller: currentUser.name, client, qty, amount });
       data.finances.push({ date: new Date().toLocaleDateString('fr-FR'), filiale: 'BRB', desc: `Vente ${qty} calendrier(s) - ${client}`, author: currentUser.name, amount: amount });
-      
       saveData();
     }
 
-    // CARTE MARQUEURS
+    // STOCKS LA ROUE DES DÉLICES
+    function saveProductStock(e) {
+      e.preventDefault();
+      const name = document.getElementById('prodName').value;
+      const price = parseFloat(document.getElementById('prodPrice').value);
+      const stock = parseInt(document.getElementById('prodStock').value);
+
+      const existing = data.products.find(p => p.name.toLowerCase() === name.toLowerCase());
+      if (existing) { existing.price = price; existing.stock = stock; }
+      else { data.products.push({ name, price, stock }); }
+      saveData();
+    }
+
+    function sellProduct(name) {
+      const p = data.products.find(x => x.name === name);
+      if (p && p.stock > 0) {
+        p.stock--;
+        data.finances.push({ date: new Date().toLocaleDateString('fr-FR'), filiale: 'La Roue des Délices', desc: `Vente ${p.name}`, author: currentUser.name, amount: p.price });
+        saveData();
+      }
+    }
+
+    // CONFIGURATION
+    function saveConfig(e) {
+      e.preventDefault();
+      data.config.logo = document.getElementById('cfgLogo').value;
+      data.config.logoBRB = document.getElementById('cfgLogoBRB').value;
+      data.config.logoReporter = document.getElementById('cfgLogoReporter').value;
+      data.config.logoDelices = document.getElementById('cfgLogoDelices').value;
+      data.config.map = document.getElementById('cfgMap').value;
+      saveData();
+    }
+
+    function saveVehicles(e) {
+      e.preventDefault();
+      data.config.vehBRB = document.getElementById('cfgVehBRB').value.split('\n').filter(x => x.trim() !== '');
+      data.config.vehReporter = document.getElementById('cfgVehReporter').value.split('\n').filter(x => x.trim() !== '');
+      data.config.vehDelices = document.getElementById('cfgVehDelices').value.split('\n').filter(x => x.trim() !== '');
+      saveData();
+    }
+
     function addMarker(e) {
       const rect = e.target.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width) * 100;
       const y = ((e.clientY - rect.top) / rect.height) * 100;
-
       data.markers.push({ x, y });
-      saveData();
-    }
-
-    // CONFIG
-    function saveConfig(e) {
-      e.preventDefault();
-      data.config.logo = document.getElementById('cfgLogo').value;
-      data.config.map = document.getElementById('cfgMap').value;
       saveData();
     }
 
     // RENDU GLOBAL
     function renderAll() {
-      // Configuration visuels
-      if (data.config.logo) {
-        document.getElementById('loginLogo').src = data.config.logo;
-        document.getElementById('sidebarLogo').src = data.config.logo;
-      }
-      if (data.config.map) {
-        document.getElementById('kelleysMap').style.backgroundImage = `url('${data.config.map}')`;
-      }
+      // Visuels & Logos
+      if (data.config.logo) { document.getElementById('loginLogo').src = data.config.logo; document.getElementById('sidebarLogo').src = data.config.logo; }
+      if (data.config.logoBRB) document.getElementById('logoBRBHeader').src = data.config.logoBRB;
+      if (data.config.logoReporter) document.getElementById('logoReporterHeader').src = data.config.logoReporter;
+      if (data.config.logoDelices) document.getElementById('logoDelicesHeader').src = data.config.logoDelices;
+      if (data.config.map) document.getElementById('kelleysMap').style.backgroundImage = `url('${data.config.map}')`;
 
-      // Stats
-      const totalSolde = data.finances.reduce((acc, curr) => acc + curr.amount, 0);
+      // Formulaire Véhicules config & dropdown
+      document.getElementById('cfgVehBRB').value = (data.config.vehBRB || []).join('\n');
+      document.getElementById('cfgVehReporter').value = (data.config.vehReporter || []).join('\n');
+      document.getElementById('cfgVehDelices').value = (data.config.vehDelices || []).join('\n');
+
+      const patrolVehSelect = document.getElementById('patrolVeh');
+      patrolVehSelect.innerHTML = (data.config.vehBRB || []).map(v => `<option value="${v}">${v}</option>`).join('');
+
+      // Calculations Trésorerie par Filiale
+      const calcSolde = fName => data.finances.filter(f => f.filiale === fName).reduce((a,c) => a + c.amount, 0);
+      const soldeBRB = calcSolde('BRB');
+      const soldeReporter = calcSolde('Le Petit Reporter');
+      const soldeDelices = calcSolde('La Roue des Délices');
+      const soldeAdmin = calcSolde('Admin');
+      const totalSolde = soldeBRB + soldeReporter + soldeDelices + soldeAdmin;
+
       document.getElementById('statSolde').innerText = totalSolde.toLocaleString('fr-FR') + ' €';
+      document.getElementById('soldeBRB').innerText = soldeBRB.toLocaleString('fr-FR') + ' €';
+      document.getElementById('soldeReporter').innerText = soldeReporter.toLocaleString('fr-FR') + ' €';
+      document.getElementById('soldeDelices').innerText = soldeDelices.toLocaleString('fr-FR') + ' €';
+      document.getElementById('soldeAdmin').innerText = soldeAdmin.toLocaleString('fr-FR') + ' €';
+
       document.getElementById('statPatrouilles').innerText = data.patrouilles.filter(p => p.status !== 'Terminé').length;
       document.getElementById('statCalendriers').innerText = data.sales.reduce((acc, s) => acc + s.qty, 0);
       document.getElementById('statAgents').innerText = data.agents.length;
 
-      // Table Patrouilles
+      // Tables
       document.getElementById('tablePatrouilles').innerHTML = data.patrouilles.map(p => `
         <tr>
           <td>#${p.id.toString().slice(-4)}</td>
@@ -506,63 +678,53 @@
           <td>${p.agents.join(', ')}</td>
           <td><span class="badge badge-brb">${p.status}</span></td>
           <td>${p.time}</td>
-          <td><button class="btn-gold" style="padding: 4px 8px; font-size: 0.75rem;" onclick="editPatrol(${p.id})">✏️ Modifier</button></td>
+          <td><button class="btn-gold" style="padding: 4px 8px; font-size: 0.75rem;" onclick="editPatrol(${p.id})">✏️</button></td>
         </tr>
       `).join('');
 
-      // Table Sales
       document.getElementById('tableSales').innerHTML = data.sales.map(s => `
-        <tr>
-          <td>${s.date}</td>
-          <td>${s.seller}</td>
-          <td>${s.client}</td>
-          <td>${s.qty}</td>
-          <td style="color: var(--accent-gold); font-weight: bold;">+${s.amount} €</td>
-        </tr>
+        <tr><td>${s.date}</td><td>${s.seller}</td><td>${s.client}</td><td>${s.qty}</td><td style="color:var(--accent-gold); font-weight:bold;">+${s.amount} €</td></tr>
       `).join('');
 
-      // Table Finances
       document.getElementById('tableFinances').innerHTML = data.finances.map(f => `
+        <tr><td>${f.date}</td><td><span class="badge badge-brb">${f.filiale}</span></td><td>${f.desc}</td><td>${f.author}</td><td style="color:${f.amount >= 0 ? '#4caf50' : '#f44336'}; font-weight:bold;">${f.amount >= 0 ? '+' : ''}${f.amount} €</td></tr>
+      `).join('');
+
+      document.getElementById('tableAgents').innerHTML = data.agents.map(a => `
+        <tr><td><strong>${a.id}</strong></td><td>${a.name}</td><td>${a.pin}</td><td><span class="badge badge-brb">${a.filiale}</span></td><td>${a.role}</td><td>${(a.medals||[]).map(m=>'🎖️ '+m).join(' ')}</td></tr>
+      `).join('');
+
+      // La Roue des Délices Menu & Stock Tables
+      document.getElementById('tableCivilMenu').innerHTML = data.products.map(p => `
+        <tr><td>${p.name}</td><td>${p.price} €</td><td>${p.stock > 0 ? '🟢 En stock' : '🔴 Épuisé'}</td></tr>
+      `).join('');
+
+      document.getElementById('tableDelicesStocks').innerHTML = data.products.map(p => `
         <tr>
-          <td>${f.date}</td>
-          <td><span class="badge badge-brb">${f.filiale}</span></td>
-          <td>${f.desc}</td>
-          <td>${f.author}</td>
-          <td style="color: ${f.amount >= 0 ? '#4caf50' : '#f44336'}; font-weight: bold;">${f.amount >= 0 ? '+' : ''}${f.amount} €</td>
+          <td>${p.name}</td><td>${p.price} €</td><td><strong>${p.stock}</strong></td>
+          <td><button class="btn-gold" style="padding: 4px 8px; font-size: 0.75rem;" onclick="sellProduct('${p.name}')">🛒 Vendre 1</button></td>
         </tr>
       `).join('');
 
-      // Table Agents
-      document.getElementById('tableAgents').innerHTML = data.agents.map(a => `
-        <tr>
-          <td><strong>${a.id}</strong></td>
-          <td>${a.name}</td>
-          <td><span class="badge badge-brb">${a.filiale}</span></td>
-          <td>${a.role}</td>
-          <td>${a.medals.map(m => `🎖️ ${m}`).join(' ')}</td>
-        </tr>
+      // Checkbox Agents BRB
+      document.getElementById('patrolAgentsChecklist').innerHTML = data.agents.map(a => `
+        <label class="checkbox-item"><input type="checkbox" value="${a.name}" class="patrol-agent-cb"> ${a.name}</label>
       `).join('');
 
       // Marqueurs carte
       const mapContainer = document.getElementById('kelleysMap');
       mapContainer.querySelectorAll('.map-marker').forEach(m => m.remove());
-      data.markers.forEach(m => {
+      data.markers.forEach((m, idx) => {
         const el = document.createElement('div');
         el.className = 'map-marker';
         el.style.left = m.x + '%';
         el.style.top = m.y + '%';
+        el.innerText = idx + 1;
         mapContainer.appendChild(el);
       });
-
-      renderPatrolChecklist();
     }
 
-    // Horloge
-    setInterval(() => {
-      document.getElementById('liveClock').innerText = new Date().toLocaleTimeString('fr-FR');
-    }, 1000);
-
-    // Initialisation
+    setInterval(() => { document.getElementById('liveClock').innerText = new Date().toLocaleTimeString('fr-FR'); }, 1000);
     renderAll();
   </script>
 </body>
