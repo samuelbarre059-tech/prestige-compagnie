@@ -1,7 +1,9 @@
-/* Pour activer le partage des données, remplace la ligne ci-dessous par ta config Firebase :
 window.FIREBASE_CONFIG = {
-  apiKey: "...", authDomain: "...", projectId: "...",
-  storageBucket: "...", messagingSenderId: "...", appId: "..."
+  apiKey: "AIzaSyCt3FGjpzVAhVmeBi1beVSDjIDSCAtMI5w",
+  authDomain: "prestige-compagnie.firebaseapp.com",
+  projectId: "prestige-compagnie",
+  storageBucket: "prestige-compagnie.firebasestorage.app",
+  messagingSenderId: "103013606771",
+  appId: "1:103013606771:web:403b24cbd830cbcd0f9106",
+  measurementId: "G-675S2QD53W"
 };
-Tant que la valeur est null, l'app fonctionne en mode local (données propres au navigateur). */
-window.FIREBASE_CONFIG = null;
