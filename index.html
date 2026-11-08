@@ -50,7 +50,9 @@ th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--ln);font-s
 #mw{position:absolute;left:0;top:0;width:2000px;height:2000px;transform-origin:0 0}
 #mw img{width:100%;height:100%;display:block;user-select:none;-webkit-user-drag:none}
 .mk{position:absolute;width:44px;height:44px;transform:translate(-50%,-50%) scale(var(--k,1));cursor:pointer;filter:drop-shadow(0 2px 4px #000a)}.mk img{width:100%;height:100%;display:block}
-.menu-c{margin-bottom:22px}.menu-c div{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px dashed var(--ln)}
+.mi{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px dashed var(--ln)}.mi:last-child{border:0}.mi b{color:var(--ac);white-space:nowrap}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin:-6px 0 22px;border-bottom:1px solid var(--ln)}
+.tb{padding:10px 16px;cursor:pointer;color:var(--mu);border-bottom:3px solid transparent;font-weight:500;margin-bottom:-1px}.tb:hover{color:var(--tx)}.tb.on{color:var(--tx);border-bottom-color:var(--ac)}
 .login{max-width:380px;margin:8vh auto}
 @media(max-width:820px){body{display:block}aside{position:static;width:auto;flex-direction:row;flex-wrap:wrap}.brand,.sp{display:none}main{margin:0}.two{grid-template-columns:1fr}}
 </style>
@@ -70,22 +72,24 @@ const F={
 const R={president:['Président',4],vp:['Vice-Président',3],directeur:['Directeur',2],salarie:['Salarié',1]};
 const IC={home:'🏠',menu:'🍽️',map:'🗺️',adm:'📋',tre:'💰',ges:'⚙️'};
 const seed=()=>({users:[{id:'S.Mouveau',name:'Samuel Mouveau',pin:'9999',role:'salarie',admin:true,fs:[],dirs:[],grade:'Administrateur'}],
- patrols:[],events:[],tx:[],news:[],maps:[],
+ patrols:[],events:[],tx:[],news:[],maps:[],medals:[],
  veh:{BRB:['BRB-01 · Van de balisage','BRB-02 · Fourgon'],RD:['RD-01 · Food truck'],PR:['PR-01 · SUV presse']},
  menu:[{n:'Muffin chocolat',p:5,c:'Douceurs'},{n:'Café chaud',p:3,c:'Boissons'}],logos:{}});
 /* Compatibilité anciens comptes : admin/membre/f -> admin(bool)/salarie/fs[] */
 const norm=u=>{u={...u};if(u.role=='admin'){u.admin=true;u.role='salarie'}if(u.role=='membre')u.role='salarie';
  u.fs=u.fs||(u.f?[u.f]:[]);u.dirs=u.dirs||(u.role=='directeur'&&u.f?[u.f]:[]);if(u.role=='directeur')u.dirs.forEach(k=>{if(!u.fs.includes(k))u.fs.push(k)});delete u.f;delete u.medals;return u};
-const load=()=>{let d;try{d=JSON.parse(localStorage.getItem(KEY))}catch(x){}d=d||seed();d.users=d.users.map(norm);d.maps=d.maps||[];return d};
+const load=()=>{let d;try{d=JSON.parse(localStorage.getItem(KEY))}catch(x){}d=d||seed();d.users=d.users.map(norm);d.maps=d.maps||[];d.medals=d.medals||[];return d};
 const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(D))}catch(x){alert('Stockage plein : réduis la taille des logos.')}};
-const FB_ON=!!window.FIREBASE_CONFIG;let SETUP=false,AUTHID=null,pending=false,mKeep=false,curMap='base',editU=null;
-let D=FB_ON?{users:[],patrols:[],events:[],tx:[],news:[],maps:[],veh:{BRB:[],RD:[],PR:[]},menu:[],logos:{}}:load(),U=null,P='home',placing=false;
+const FB_ON=!!window.FIREBASE_CONFIG;let SETUP=false,AUTHID=null,pending=false,mKeep=false,curMap='base',editU=null,FT='pat';
+let D=FB_ON?{users:[],patrols:[],events:[],tx:[],news:[],maps:[],medals:[],veh:{BRB:[],RD:[],PR:[]},menu:[],logos:{}}:load(),U=null,P='home',placing=false;
 if(!FB_ON)try{U=D.users.find(u=>u.id==sessionStorage.s)||null}catch(x){}
 const save=()=>{FB_ON?window.FBX?.sync():persist();render()};
 /* Rafraîchit sans casser un formulaire en cours de saisie */
 function softRender(){const a=document.activeElement;if(a&&/INPUT|SELECT/.test(a.tagName)&&a.closest('main'))pending=true;else render()}
 document.addEventListener('focusout',()=>{if(pending)setTimeout(()=>{const a=document.activeElement;if(!(a&&/INPUT|SELECT/.test(a.tagName))){pending=false;render()}},1200)});
-const medals=id=>D.events.filter(x=>x.m&&(x.aw||[]).includes(id)).map(x=>({m:x.m,e:x.t,d:x.d}));
+const medName=id=>D.medals.find(m=>m.id==id)?.name||id;
+const medImg=m=>m.img?`<img src="${m.img}" alt="" style="width:56px;height:56px;object-fit:contain;flex:none">`:`<span style="font-size:2.2rem">🏅</span>`;
+const medals=id=>D.events.filter(x=>x.m&&(x.aw||[]).includes(id)).map(x=>{const m=D.medals.find(y=>y.id==x.m)||{};return{n:m.name||x.m,desc:m.desc||'',img:m.img||'',e:x.t,d:x.d}});
 
 /* ===== OUTILS ===== */
 const $=i=>document.getElementById(i),v=i=>$(i).value.trim();
@@ -100,8 +104,9 @@ const usr=id=>D.users.find(u=>u.id==id),nm=id=>usr(id)?.name||id;
 const bal=f=>D.tx.filter(t=>!f||t.f==f).reduce((a,t)=>a+t.a,0);
 const money=n=>n.toLocaleString('fr-FR')+' $';
 const pr=m=>m.p==null?'Tarif libre':m.p+' $';
-const lg=k=>`<img src="${D.logos[k]||(k=='main'?'img/prestige.png':k=='banner'?'img/banniere.png':F[k].i)}" alt="">`;
-const go=p=>{P=p;placing=false;if(p!='map')mKeep=false;render();scrollTo(0,0)};
+const lu=k=>D.logos[k]||(k=='main'?'img/prestige.png':k=='banner'?'img/banniere.png':F[k].i);
+const lg=k=>`<img src="${lu(k)}" alt="">`;
+const go=p=>{P=p;FT='pat';placing=false;if(p!='map')mKeep=false;render();scrollTo(0,0)};
 const del=(a,id)=>{if(confirm('Supprimer cet élément ?')){D[a]=D[a].filter(x=>x.id!=id);save()}};
 const today=()=>new Date().toISOString().slice(0,10);
 
@@ -111,7 +116,7 @@ function nav(){
  if(U){Object.keys(F).filter(canV).forEach(k=>it.push([k,F[k].s]));it.push(['map','Carte interactive']);
   if(lvl()>=2)it.push(['adm','Administratif'],['tre','Trésorerie']);if(lvl()>=5)it.push(['ges','Gestion'])}
  else{it.push(['login','Connexion salariés']);if(SETUP)it.push(['setup','Première installation'])}
- return it.map(([k,t])=>`<a class="nv${P==k?' on':''}" tabindex=0 onclick="go('${k}')" style="--ac:${F[k]?.c||'#d4b055'}">${F[k]?`<img class=ni src="${F[k].i}" alt="">`:IC[k]||'🔑'} ${t}</a>`).join('')}
+ return it.map(([k,t])=>`<a class="nv${P==k?' on':''}" tabindex=0 onclick="go('${k}')" style="--ac:${F[k]?.c||'#d4b055'}">${F[k]?`<img class=ni src="${lu(k)}" alt="">`:IC[k]||'🔑'} ${t}</a>`).join('')}
 
 function render(){
  if(FB_ON)U=AUTHID?D.users.find(u=>u.id.toLowerCase()==AUTHID)||null:null;else if(U)U=usr(U.id)||null;
@@ -132,12 +137,12 @@ home(){
  <div class=grid>${Object.entries(F).map(([k,f])=>`<div class="card f" style="--ac:${f.c}"><div class=lgo>${lg(k)}</div><h3>${f.n}</h3><p class=mu>${f.d}</p>
  ${canV(k)?`<button class=btn onclick="go('${k}')">Ouvrir la page</button>`:k=='RD'?`<button class="btn g" onclick="go('menu')">Voir le menu</button>`:''}</div>`).join('')}</div>
  ${U?`<h3 class=st>Annonces</h3>${D.news.slice().reverse().map(n=>`<div class=card style="margin-bottom:10px"><b>${e(n.t)}</b><span>${e(n.x)}</span><small>${n.d} · ${e(nm(n.by))}</small></div>`).join('')||'<p class=mu>Aucune annonce pour le moment.</p>'}
- <h3 class=st>Mes médailles</h3><div class=grid>${mine.map(m=>`<div class=card><span style="font-size:1.6rem">🏅</span><b>${e(m.m)}</b><small>${e(m.e)} · ${m.d}</small></div>`).join('')||'<p class=mu>Aucune médaille reçue pour l’instant.</p>'}</div>`:''}`},
+ <h3 class=st>Mes médailles</h3><div class=grid>${mine.map(m=>`<div class=card style="flex-direction:row;align-items:center;gap:12px">${medImg(m)}<div><b>${e(m.n)}</b><br><small>${e(m.desc)}</small><br><small>${e(m.e)} · ${m.d}</small></div></div>`).join('')||'<p class=mu>Aucune médaille reçue pour l’instant.</p>'}</div>`:''}`},
 
 menu(){
  const cats=[...new Set(D.menu.map(m=>m.c))];
- return `<div class=ph><div class=lgo style="--ac:${F.RD.c}">${lg('RD')}</div><div><h2>Menu de la Roue des Délices</h2><p class=mu>Prix en dollars, servis au food truck.</p></div></div>
- ${cats.map(c=>`<div class=menu-c><h3>${e(c)}</h3>${D.menu.filter(m=>m.c==c).map(m=>`<div><span>${e(m.n)}</span><b>${pr(m)}</b></div>`).join('')}</div>`).join('')||'<p class=mu>Le menu arrive bientôt.</p>'}`},
+ return `<div class=ph><div class=lgo>${lg('RD')}</div><div><h2>Menu de la Roue des Délices</h2><p class=mu>L’excellence au pas de votre porte</p></div></div>
+ <div class=grid style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr));align-items:start">${cats.map(c=>`<div class="card f" style="--ac:${F.RD.c};gap:2px"><h3 style="margin-bottom:6px">${e(c)}</h3>${D.menu.filter(m=>m.c==c).map(m=>`<div class=mi><span>${e(m.n)}</span><b>${pr(m)}</b></div>`).join('')}</div>`).join('')||'<p class=mu>Le menu arrive bientôt.</p>'}</div>`},
 
 login(){return `<form class="card login" onsubmit="doLogin(event)"><div class=lgo style="width:110px;height:110px;margin:0 auto 6px">${lg('main')}</div><h2>Connexion</h2><p class=mu>Espace réservé aux salariés.</p>
  <label>Identifiant</label><input id=li placeholder="Ex : S.Mouveau" autocomplete=username required>
@@ -154,10 +159,11 @@ map(){const m=gm(),ev=D.events.filter(x=>x.x!=null&&(x.mp||'base')==m.id).sort((
  ${dir?`<button class="btn${placing?'':' g'}" onclick="placing=!placing;render()">${placing?'Annuler la pose':'📍 Poser un événement'}</button>`:''}
  <button class="btn g" onclick="mapFit()">Recentrer</button></div>
  <div class=two style="grid-template-columns:1fr 260px"><div id=mv${placing?' style="cursor:crosshair"':''}><div id=mw style="height:${mapH()}px"><img src="${m.img}" alt="Carte" onerror="this.style.display='none'">
- ${ev.map(x=>`<div class=mk style="left:${x.x}%;top:${x.y}%" title="${e(x.t)}" onpointerup="info('${x.id}')"><img src="${F[x.f].i}" alt=""></div>`).join('')}</div></div>
- <div id=inf class=card><h4>Événements</h4>${ev.map(x=>`<a class=nv style="--ac:${F[x.f].c}" onclick="info('${x.id}')"><img class=ni src="${F[x.f].i}" alt=""> ${e(x.t)}</a>`).join('')||'<p class=mu>Aucun événement sur cette carte.</p>'}</div></div>
+ ${ev.map(x=>`<div class=mk style="left:${x.x}%;top:${x.y}%" title="${e(x.t)}" onpointerup="info('${x.id}')"><img src="${lu(x.f)}" alt=""></div>`).join('')}</div></div>
+ <div id=inf class=card><h4>Événements</h4>${ev.map(x=>`<a class=nv style="--ac:${F[x.f].c}" onclick="info('${x.id}')"><img class=ni src="${lu(x.f)}" alt=""> ${e(x.t)}</a>`).join('')||'<p class=mu>Aucun événement sur cette carte.</p>'}</div></div>
  ${dir?`<h3 class=st>Ajouter une carte personnalisée</h3><form class="card row" onsubmit="addMap(event)"><div><label>Nom</label><input id=mnm required placeholder="Ex : Balisage course du 12"></div>
- <div><label>Image (export Canva en PNG ou JPG)</label><input id=mfl type=file accept="image/*" required></div><button class=btn>Ajouter la carte</button></form>
+ <div><label>Image à importer (PNG ou JPG)</label><input id=mfl type=file accept="image/*"></div><div style="flex:2"><label>…ou chemin / lien de l’image (qualité maximale)</label><input id=mur placeholder="maps/course.jpg"></div><button class=btn>Ajouter la carte</button></form>
+ <p class=mu style="margin-top:8px">Qualité maximale : mets ton image Canva exportée dans un dossier <b>maps</b> de ton GitHub, puis indique son chemin (ex : maps/course.jpg).</p>
  ${m.id!='base'?`<button class="btn g s" style="margin-top:10px" onclick="delMap('${m.id}')">Supprimer la carte « ${e(m.name)} »</button>`:''}`:''}`},
 
 adm(){
@@ -204,7 +210,8 @@ Object.keys(F).forEach(k=>PG[k]=()=>fil(k));
 function fil(k){
  const f=F[k],cd=canD(k),mem=D.users.filter(u=>inF(u,k)),ps=D.patrols.filter(p=>p.f==k).sort((a,b)=>b.t-a.t),ev=D.events.filter(x=>x.f==k).sort((a,b)=>b.d.localeCompare(a.d));
  return `<div class=ph><div class=lgo>${lg(k)}</div><div><h2>${f.n}</h2><p class=mu>${f.d}</p></div></div>
- <h3 class=st style="margin-top:0">Fiches de patrouille</h3><div class=two>
+ <div class=tabs>${[['pat','Patrouilles'+(ps.some(p=>p.st=='En service')?' · '+ps.filter(p=>p.st=='En service').length:'')],['eff','Effectif'],['med','Médailles'],['evt','Événements'],...(cd?[['ges','Gestion']]:[])].map(([t,l])=>`<a class="tb${FT==t?' on':''}" tabindex=0 onclick="FT='${t}';render()">${l}</a>`).join('')}</div>
+ ${FT=='pat'?`<h3 class=st style="margin-top:0">Fiches de patrouille</h3><div class=two>
  <form class=card onsubmit="addPatrol(event,'${k}')"><h4>Nouvelle fiche</h4><label>Indicatif</label><input id=pc required placeholder="Ex : ${f.s.slice(0,3).toUpperCase()}-Alpha 1">
  <label>Véhicule</label><select id=pv>${D.veh[k].map(x=>`<option>${e(x)}</option>`).join('')}</select>
  <label>Effectif</label><div class=chk>${mem.map(u=>`<label><input type=checkbox class=pm value="${u.id}">${e(u.name)} <small>${e(u.grade)}</small></label>`).join('')||'<span class=mu>Aucun membre dans cette filiale.</span>'}</div>
@@ -213,15 +220,17 @@ function fil(k){
  <span>🚗 ${e(p.veh)}</span><span>👥 ${p.crew.map(i=>e(nm(i))).join(', ')}</span>${p.n?`<span class=mu>${e(p.n)}</span>`:''}
  <small>${new Date(p.t).toLocaleString('fr-FR')} · ${e(nm(p.by))}</small>
  <div><button class="btn g s" onclick="tgl('${p.id}')">${p.st=='En service'?'Terminer':'Reprendre'}</button> ${cd||p.by==U.id?`<button class="btn g s" onclick="del('patrols','${p.id}')">Supprimer</button>`:''}</div></div>`).join('')||'<p class=mu>Aucune fiche. Crée la première depuis le formulaire.</p>'}</div></div>
- <h3 class=st>Effectif</h3><div class=tw><table><tr><th>Nom</th><th>Rôle</th><th>Grade</th><th>Médailles</th></tr>${mem.map(u=>`<tr><td>${e(u.name)}</td><td>${rl(u)}</td><td>${e(u.grade)}</td><td>${medals(u.id).length?'🏅 '+medals(u.id).length:'—'}</td></tr>`).join('')}</table></div>
- <h3 class=st>Événements et médailles</h3>
- ${cd?`<form class=card onsubmit="addEvent(event,'${k}')"><div class=row style="display:flex;gap:10px"><div style="flex:2"><label>Événement</label><input id=et required></div><div><label>Date</label><input id=ed type=date value="${today()}" required></div><div><label>Médaille décernée</label><input id=em placeholder="Facultatif"></div></div>
+ `:''}${FT=='eff'?`<h3 class=st style="margin-top:0">Effectif</h3><div class=tw><table><tr><th>Nom</th><th>Rôle</th><th>Grade</th><th>Médailles</th></tr>${mem.map(u=>`<tr><td>${e(u.name)}</td><td>${rl(u)}</td><td>${e(u.grade)}</td><td>${medals(u.id).length?'🏅 '+medals(u.id).length:'—'}</td></tr>`).join('')}</table></div>
+ `:''}${FT=='med'?`<h3 class=st style="margin-top:0">Médailles</h3>${cd?`<form class="card row" onsubmit="addMedal(event,'${k}')"><div><label>Titre</label><input id=mdn required placeholder="Ex : Mérite du balisage"></div><div style="flex:2"><label>Description</label><input id=mdd required></div><div><label>Image (facultatif)</label><input id=mdi type=file accept="image/*"></div><button class=btn>Créer la médaille</button></form>`:''}
+ <div class=grid style="margin-top:12px">${D.medals.filter(m=>m.f==k).map(m=>`<div class=card style="flex-direction:row;align-items:center;gap:12px">${medImg(m)}<div><b>${e(m.name)}</b><br><small>${e(m.desc)}</small>${cd?`<br><a class=mu style="cursor:pointer" onclick="delMedal('${m.id}')">Supprimer</a>`:''}</div></div>`).join('')||'<p class=mu>Aucune médaille créée.</p>'}</div>
+ `:''}${FT=='evt'?`<h3 class=st style="margin-top:0">Événements et attribution</h3>
+ ${cd?`<form class=card onsubmit="addEvent(event,'${k}')"><div class=row style="display:flex;gap:10px"><div style="flex:2"><label>Événement</label><input id=et required></div><div><label>Date</label><input id=ed type=date value="${today()}" required></div><div><label>Médaille décernée</label><select id=em><option value="">Aucune</option>${D.medals.filter(m=>m.f==k).map(m=>`<option value="${m.id}">${e(m.name)}</option>`).join('')}</select></div></div>
  <label>Récompensés</label><div class=chk>${mem.map(u=>`<label><input type=checkbox class=ea value="${u.id}">${e(u.name)}</label>`).join('')}</div><button class=btn>Créer l’événement</button>${k=='BRB'?'<small>Pour le placer sur la carte, utilise « Poser un événement » dans Carte interactive.</small>':''}</form>`:''}
- ${ev.map(x=>`<div class="card" style="margin-top:10px"><b>${e(x.t)}</b><small>${x.d}${x.m?' · 🏅 '+e(x.m):''}${x.x!=null?' · 📍 sur la carte':''}</small>${x.aw?.length?`<span>${x.aw.map(i=>e(nm(i))).join(', ')}</span>`:''}${cd?`<div><button class="btn g s" onclick="del('events','${x.id}')">Supprimer</button></div>`:''}</div>`).join('')||'<p class=mu style="margin-top:10px">Aucun événement.</p>'}
- ${cd?`<h3 class=st>Véhicules</h3><div class="card row">${D.veh[k].map((x,i)=>`<span class=pill>${e(x)} <a style="cursor:pointer" onclick="D.veh['${k}'].splice(${i},1);save()">✕</a></span>`).join('')}
+ ${ev.map(x=>`<div class="card" style="margin-top:10px"><b>${e(x.t)}</b><small>${x.d}${x.m?' · 🏅 '+e(medName(x.m)):''}${x.x!=null?' · 📍 sur la carte':''}</small>${x.aw?.length?`<span>${x.aw.map(i=>e(nm(i))).join(', ')}</span>`:''}${cd?`<div><button class="btn g s" onclick="del('events','${x.id}')">Supprimer</button></div>`:''}</div>`).join('')||'<p class=mu style="margin-top:10px">Aucun événement.</p>'}
+ `:''}${FT=='ges'&&cd?`${cd?`<h3 class=st style="margin-top:0">Véhicules</h3><div class="card row">${D.veh[k].map((x,i)=>`<span class=pill>${e(x)} <a style="cursor:pointer" onclick="D.veh['${k}'].splice(${i},1);save()">✕</a></span>`).join('')}
  <form onsubmit="addVeh(event,'${k}')" style="display:flex;gap:8px;min-width:100%"><input id=vn placeholder="Nouveau véhicule" required><button class=btn style="margin:0">Ajouter</button></form></div>`:''}
  ${k=='RD'&&cd?`<h3 class=st>Menu</h3><form class="card row" onsubmit="addMenu(event)"><div style="flex:2"><label>Produit</label><input id=mn required></div><div><label>Prix</label><input id=mp type=number step=any required></div><div><label>Tarif libre</label><select id=mf onchange="$('mp').disabled=this.value=='1';$('mp').required=this.value!='1'"><option value=0>Non</option><option value=1>Oui</option></select></div><div><label>Catégorie</label><input id=mc value="Douceurs" required></div><button class=btn>Ajouter</button></form>
- <div class=tw><table>${D.menu.map((m,i)=>`<tr><td>${e(m.n)}</td><td>${e(m.c)}</td><td>${pr(m)}</td><td><a style="cursor:pointer" onclick="D.menu.splice(${i},1);save()">✕</a></td></tr>`).join('')}</table></div>`:''}`}
+ <div class=tw><table>${D.menu.map((m,i)=>`<tr><td>${e(m.n)}</td><td>${e(m.c)}</td><td>${pr(m)}</td><td><a style="cursor:pointer" onclick="D.menu.splice(${i},1);save()">✕</a></td></tr>`).join('')}</table></div>`:''}`:''}`}
 
 /* ===== ACTIONS ===== */
 async function doLogin(ev){ev.preventDefault();
@@ -238,6 +247,9 @@ function addPatrol(ev,k){ev.preventDefault();const crew=[...document.querySelect
 function tgl(id){const p=D.patrols.find(x=>x.id==id);p.st=p.st=='En service'?'Terminée':'En service';save()}
 function addEvent(ev,k){ev.preventDefault();const aw=[...document.querySelectorAll('.ea:checked')].map(c=>c.value),m=v('em'),x={id:uid(),f:k,t:v('et'),d:v('ed'),m,aw};
  D.events.push(x);save()}
+function addMedal(ev,k){ev.preventDefault();const fl=$('mdi').files[0],fin=img=>{D.medals.push({id:uid(),f:k,name:v('mdn'),desc:v('mdd'),img:img||''});save()};
+ if(!fl)return fin('');const im=new Image();im.onload=()=>{const s=Math.min(1,160/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);fin(c.toDataURL('image/png'))};im.src=URL.createObjectURL(fl)}
+function delMedal(id){if(confirm('Supprimer cette médaille ? Elle sera retirée des salariés qui l’ont reçue.')){D.medals=D.medals.filter(m=>m.id!=id);D.events.forEach(x=>{if(x.m==id)x.m=''});save()}}
 function addVeh(ev,k){ev.preventDefault();D.veh[k].push(v('vn'));save()}
 function addMenu(ev){ev.preventDefault();D.menu.push({n:v('mn'),p:v('mf')=='1'?null:parseFloat(v('mp')),c:v('mc')});save()}
 function addNews(ev){ev.preventDefault();D.news.push({id:uid(),t:v('nt'),x:v('nx'),d:new Date().toLocaleDateString('fr-FR'),by:U.id});save()}
@@ -269,16 +281,19 @@ function importJ(inp){const r=new FileReader();r.onload=()=>{try{D=JSON.parse(r.
 let mS=1,mX=0,mY=0;
 const BASE={id:'base',name:'Vice City',img:'map.jpg',r:1},MAPS=()=>[BASE,...D.maps],gm=()=>MAPS().find(m=>m.id==curMap)||BASE,mapH=()=>2000*gm().r;
 function mapFit(){const v=$('mv'),H=mapH();mS=Math.min(v.clientWidth/2000,v.clientHeight/H);mX=(v.clientWidth-2000*mS)/2;mY=(v.clientHeight-H*mS)/2;mApply()}
-function addMap(ev){ev.preventDefault();const fl=$('mfl').files[0],nm=v('mnm'),im=new Image();
- im.onload=()=>{const s=Math.min(1,1800/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);
+function addMap(ev){ev.preventDefault();const fl=$('mfl').files[0],nm=v('mnm'),url=v('mur');
+ if(!fl&&!url)return alert('Choisis une image ou indique son chemin.');
+ const fin=(img,q)=>{D.maps.push({id:uid(),name:nm,img,r:+q.toFixed(4),by:U.id});curMap=D.maps[D.maps.length-1].id;mKeep=false;save()},im=new Image();
+ if(url){im.onload=()=>fin(url,im.naturalHeight/im.naturalWidth);im.onerror=()=>alert('Image introuvable : vérifie le chemin ou le nom du fichier.');im.src=url;return}
+ im.onload=()=>{const s=Math.min(1,2600/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);
   const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);
-  let q=.85,d=c.toDataURL('image/jpeg',q);while(d.length>700000&&q>.3){q-=.1;d=c.toDataURL('image/jpeg',q)}
-  if(d.length>900000)return alert('Image trop lourde : réduis sa taille avant de l’ajouter.');
-  const id=uid();D.maps.push({id,name:nm,img:d,r:+(c.height/c.width).toFixed(4),by:U.id});curMap=id;mKeep=false;save()};im.src=URL.createObjectURL(fl)}
+  let q=.88,d=c.toDataURL('image/jpeg',q);while(d.length>880000&&q>.3){q-=.08;d=c.toDataURL('image/jpeg',q)}
+  if(d.length>950000)return alert('Image trop lourde pour l’import direct : utilise le chemin d’un fichier dans ton GitHub.');
+  fin(d,c.height/c.width)};im.src=URL.createObjectURL(fl)}
 function delMap(id){if(confirm('Supprimer cette carte et les événements posés dessus ?')){D.maps=D.maps.filter(m=>m.id!=id);D.events=D.events.filter(x=>x.mp!=id);curMap='base';mKeep=false;save()}}
 function mApply(){const w=$('mw');w.style.transform=`translate(${mX}px,${mY}px) scale(${mS})`;w.style.setProperty('--k',Math.min(1,.6/mS*.5+.2))}
 function info(id){const x=D.events.find(y=>y.id==id);if(!x||moved>6)return;
- $('inf').innerHTML=`<h4>${e(x.t)}</h4><small>${F[x.f].n} · ${x.d}</small>${x.m?`<span>🏅 ${e(x.m)}</span>`:''}${x.aw?.length?`<span>${x.aw.map(i=>e(nm(i))).join(', ')}</span>`:''}
+ $('inf').innerHTML=`<h4>${e(x.t)}</h4><small>${F[x.f].n} · ${x.d}</small>${x.m?`<span>🏅 ${e(medName(x.m))}</span>`:''}${x.aw?.length?`<span>${x.aw.map(i=>e(nm(i))).join(', ')}</span>`:''}
  <button class="btn g s" onclick="render()">Retour à la liste</button>${canD(x.f)?`<button class="btn g s" onclick="del('events','${x.id}')">Supprimer</button>`:''}`}
 let moved=0;
 function mapInit(){const v=$('mv');let drag=null,pts={},pd=0;mKeep?mApply():(mapFit(),mKeep=true);
@@ -299,7 +314,7 @@ if(C){
 const B='https://www.gstatic.com/firebasejs/10.12.2/';
 const {initializeApp}=await import(B+'firebase-app.js'),A=await import(B+'firebase-auth.js'),S=await import(B+'firebase-firestore.js');
 const app=initializeApp(C),auth=A.getAuth(app),db=S.getFirestore(app);
-const COLS=['users','patrols','events','tx','news','maps'],em=id=>id.toLowerCase()+'@prestige-compagnie.com',pw=p=>p+'#Prestige';
+const COLS=['users','patrols','events','tx','news','maps','medals'],em=id=>id.toLowerCase()+'@prestige-compagnie.com',pw=p=>p+'#Prestige';
 const key=(c,x)=>c=='users'?x.id.toLowerCase():x.id;
 let snap={},unsubs=[],loaded={},ready=false,cfgJ='',settingUp=false,sec=null;
 const fail=x=>{console.warn(x);alert('Action refusée par le serveur ('+(x.code||'erreur')+').')};
