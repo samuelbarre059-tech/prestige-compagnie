@@ -285,7 +285,7 @@ const gl=id=>D.gear.find(g=>g.id==id);
 function readImg(fl,max,cb){const im=new Image();im.onload=()=>{const s=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);
  const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.82))};im.src=URL.createObjectURL(fl)}
 function gearHtml(k,cd){const L=D.gear.filter(g=>g.f==k);
- return `<h3 class=st style="margin-top:0">Matériel</h3>
+ return `<h3 class=st style="margin-top:0">Matériel</h3><p class=mu style="margin:-6px 0 14px">Matériel minimum conseillé pour partir en patrouille, à titre indicatif.</p>
  ${cd?`<form class="card row" onsubmit="addGearList(event,'${k}')"><div style="flex:2"><label>Nouvelle liste de matériel</label><input id=gn required placeholder="Ex : Patrouille, Astreinte Enedis, Astreinte GRDF…"></div><button class=btn>Créer la liste</button></form>`:''}
  <div class=grid style="grid-template-columns:repeat(auto-fill,minmax(360px,1fr));align-items:start;margin-top:14px">${L.map(g=>`<div class="card f"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><h3>${e(g.name)}</h3>
   ${cd?`<span><button class="btn g s" onclick="renGear('${g.id}')">Renommer</button> <button class="btn g s" onclick="delGear('${g.id}')">Supprimer</button></span>`:''}</div>
@@ -298,11 +298,11 @@ function addGearList(ev,k){ev.preventDefault();const n=v('gn');D.gear.push({id:u
 function renGear(id){const g=gl(id),n=prompt('Nom de la liste',g.name);if(n&&n.trim()){jlog('Matériel : liste « '+g.name+' » renommée « '+n.trim()+' »');g.name=n.trim();save()}}
 function delGear(id){const g=gl(id);if(confirm('Supprimer la liste « '+g.name+' » et tout son matériel ?')){jlog('Matériel : liste « '+g.name+' » supprimée');D.gear=D.gear.filter(x=>x.id!=id);save()}}
 function addItem(ev,lid){ev.preventDefault();const g=gl(lid),n=v('gm'+lid),q=parseInt(v('gq'+lid))||0,fl=$('gi'+lid).files[0],
- mk=img=>{g.items.push({id:uid(),n,q,img:img||''});jlog('Matériel : « '+n+' » ×'+q+' ajouté à « '+g.name+' »');save()};fl?readImg(fl,128,mk):mk('')}
+ mk=img=>{g.items.push({id:uid(),n,q,img:img||''});jlog('Matériel : « '+n+' » ×'+q+' ajouté à « '+g.name+' »');save()};fl?readImg(fl,192,mk):mk('')}
 function qtyItem(lid,iid,d){const it=gl(lid).items.find(x=>x.id==iid);it.q=Math.max(0,it.q+d);jlog('Matériel : « '+it.n+' » '+(d>0?'+':'')+d+' → '+it.q);save()}
 function delItem(lid,iid){const g=gl(lid),it=g.items.find(x=>x.id==iid);if(confirm('Supprimer « '+it.n+' » ?')){jlog('Matériel : « '+it.n+' » retiré de « '+g.name+' »');g.items=g.items.filter(x=>x.id!=iid);save()}}
 function saveItem(ev,lid,iid){ev.preventDefault();const g=gl(lid),it=g.items.find(x=>x.id==iid),fl=$('ei').files[0],
- fin=img=>{it.n=v('en');it.q=parseInt(v('eq'))||0;if(img)it.img=img;jlog('Matériel : « '+it.n+' » modifié dans « '+g.name+' »');editG=null;save()};fl?readImg(fl,128,fin):fin('')}
+ fin=img=>{it.n=v('en');it.q=parseInt(v('eq'))||0;if(img)it.img=img;jlog('Matériel : « '+it.n+' » modifié dans « '+g.name+' »');editG=null;save()};fl?readImg(fl,192,fin):fin('')}
 function addVeh(ev,k){ev.preventDefault();D.veh[k].push(v('vn'));save()}
 function menuForm(){const m=editM!=null?D.menu[editM]:null,fr=!!m&&m.p==null,cats=[...new Set(D.menu.map(x=>x.c))];
  return `<form class="card row" onsubmit="addMenu(event)"><div style="flex:2"><label>${m?'Modifier le produit':'Produit'}</label><input id=mn value="${e(m?.n||'')}" required></div>
