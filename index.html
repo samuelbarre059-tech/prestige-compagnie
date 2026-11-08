@@ -51,6 +51,7 @@ th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--ln);font-s
 #mw img{width:100%;height:100%;display:block;user-select:none;-webkit-user-drag:none}
 .mk{position:absolute;width:44px;height:44px;transform:translate(-50%,-50%) scale(var(--k,1));cursor:pointer;filter:drop-shadow(0 2px 4px #000a)}.mk img{width:100%;height:100%;display:block}
 .mi{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px dashed var(--ln)}.mi:last-child{border:0}.mi b{color:var(--ac);white-space:nowrap}
+.mth{width:48px;height:48px;border-radius:10px;object-fit:cover;flex:none}
 .mats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .mat{background:var(--pn2);border:1px solid var(--ln);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px;align-items:center;text-align:center}
 .mimg{width:72px;height:72px;border-radius:10px;background:#fff;display:grid;place-items:center;font-size:2rem;overflow:hidden}.mimg img{width:100%;height:100%;object-fit:contain}
@@ -77,15 +78,15 @@ const R={president:['Président',4],vp:['Vice-Président',3],directeur:['Directe
 const IC={home:'🏠',menu:'🍽️',map:'🗺️',adm:'📋',tre:'💰',ges:'⚙️',jnl:'📜'};
 const seed=()=>({users:[{id:'S.Mouveau',name:'Samuel Mouveau',pin:'9999',role:'salarie',admin:true,fs:[],dirs:[],grade:'Administrateur'}],
  patrols:[],events:[],tx:[],news:[],maps:[],medals:[],sales:[],logs:[],gear:[],
- veh:{BRB:['BRB-01 · Van de balisage','BRB-02 · Fourgon'],RD:['RD-01 · Food truck'],PR:['PR-01 · SUV presse']},
+ veh:{BRB:['BRB-01 · Van de balisage','BRB-02 · Fourgon'],RD:['RD-01 · Food truck'],PR:['PR-01 · SUV presse']},vl:{BRB:[],RD:[],PR:[]},
  menu:[{n:'Muffin chocolat',p:5,c:'Douceurs'},{n:'Café chaud',p:3,c:'Boissons'}],logos:{}});
 /* Compatibilité anciens comptes : admin/membre/f -> admin(bool)/salarie/fs[] */
 const norm=u=>{u={...u};if(u.role=='admin'){u.admin=true;u.role='salarie'}if(u.role=='membre')u.role='salarie';
  u.fs=u.fs||(u.f?[u.f]:[]);u.dirs=u.dirs||(u.role=='directeur'&&u.f?[u.f]:[]);if(u.role=='directeur')u.dirs.forEach(k=>{if(!u.fs.includes(k))u.fs.push(k)});delete u.f;delete u.medals;return u};
-const load=()=>{let d;try{d=JSON.parse(localStorage.getItem(KEY))}catch(x){}d=d||seed();d.users=d.users.map(norm);d.maps=d.maps||[];d.medals=d.medals||[];d.sales=d.sales||[];d.logs=d.logs||[];d.gear=d.gear||[];return d};
+const load=()=>{let d;try{d=JSON.parse(localStorage.getItem(KEY))}catch(x){}d=d||seed();d.users=d.users.map(norm);d.maps=d.maps||[];d.medals=d.medals||[];d.sales=d.sales||[];d.logs=d.logs||[];d.gear=d.gear||[];d.vl=d.vl||{BRB:[],RD:[],PR:[]};return d};
 const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(D))}catch(x){alert('Stockage plein : réduis la taille des logos.')}};
 const FB_ON=!!window.FIREBASE_CONFIG;let SETUP=false,AUTHID=null,pending=false,mKeep=false,curMap='base',editU=null,FT='pat',jf='',editM=null,editG=null;
-let D=FB_ON?{users:[],patrols:[],events:[],tx:[],news:[],maps:[],medals:[],sales:[],logs:[],gear:[],veh:{BRB:[],RD:[],PR:[]},menu:[],logos:{}}:load(),U=null,P='home',placing=false;
+let D=FB_ON?{users:[],patrols:[],events:[],tx:[],news:[],maps:[],medals:[],sales:[],logs:[],gear:[],veh:{BRB:[],RD:[],PR:[]},vl:{BRB:[],RD:[],PR:[]},menu:[],logos:{}}:load(),U=null,P='home',placing=false;
 if(!FB_ON)try{U=D.users.find(u=>u.id==sessionStorage.s)||null}catch(x){}
 const save=()=>{FB_ON?window.FBX?.sync():persist();render()};
 /* Rafraîchit sans casser un formulaire en cours de saisie */
@@ -148,7 +149,7 @@ home(){
 menu(){
  const cats=[...new Set(D.menu.map(m=>m.c))];
  return `<div class=ph><div class=lgo>${lg('RD')}</div><div><h2>Menu de la Roue des Délices</h2><p class=mu>L’excellence au pas de votre porte</p></div></div>
- <div class=grid style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr));align-items:start">${cats.map(c=>`<div class="card f" style="--ac:${F.RD.c};gap:2px"><h3 style="margin-bottom:6px">${e(c)}</h3>${D.menu.filter(m=>m.c==c).map(m=>`<div class=mi${m.out?' style="opacity:.55"':''}><span${m.out?' style="text-decoration:line-through"':''}>${e(m.n)}</span>${m.out?'<span class=pill style="--ac:#f87171">Rupture de stock</span>':`<b>${pr(m)}</b>`}</div>`).join('')}</div>`).join('')||'<p class=mu>Le menu arrive bientôt.</p>'}</div>`},
+ <div class=grid style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr));align-items:start">${cats.map(c=>`<div class="card f" style="--ac:${F.RD.c};gap:2px"><h3 style="margin-bottom:6px">${e(c)}</h3>${D.menu.filter(m=>m.c==c).map(m=>`<div class=mi${m.out?' style="opacity:.55"':''}><span style="display:flex;gap:10px;align-items:center${m.out?';text-decoration:line-through':''}">${m.img?`<img class=mth src="${m.img}" alt="">`:''}${e(m.n)}</span>${m.out?'<span class=pill style="--ac:#f87171">Rupture de stock</span>':`<b>${pr(m)}</b>`}</div>`).join('')}</div>`).join('')||'<p class=mu>Le menu arrive bientôt.</p>'}</div>`},
 
 login(){return `<form class="card login" onsubmit="doLogin(event)"><div class=lgo style="width:110px;height:110px;margin:0 auto 6px">${lg('main')}</div><h2>Connexion</h2><p class=mu>Espace réservé aux salariés.</p>
  <label>Identifiant</label><input id=li placeholder="Ex : S.Mouveau" autocomplete=username required>
@@ -224,11 +225,11 @@ function fil(k){
  <div class=tabs>${[['pat','Patrouilles'+(ps.some(p=>p.st=='En service')?' · '+ps.filter(p=>p.st=='En service').length:'')],['eff','Effectif'],['mat','Matériel'],['med','Médailles'],['evt','Événements'],...(cd&&k=='BRB'?[['cal','Calendrier 2027']]:[]),...(cd?[['ges','Gestion']]:[])].map(([t,l])=>`<a class="tb${FT==t?' on':''}" tabindex=0 onclick="FT='${t}';render()">${l}</a>`).join('')}</div>
  ${FT=='pat'?`<h3 class=st style="margin-top:0">Fiches de patrouille</h3><div class=two>
  <form class=card onsubmit="addPatrol(event,'${k}')"><h4>Nouvelle fiche</h4><label>Indicatif</label><input id=pc required placeholder="Ex : ${f.s.slice(0,3).toUpperCase()}-Alpha 1">
- <label>Véhicule</label><select id=pv>${D.veh[k].map(x=>`<option>${e(x)}</option>`).join('')}</select>
+ ${vehSel(k)}
  <label>Effectif</label><div class=chk>${mem.map(u=>`<label><input type=checkbox class=pm value="${u.id}">${e(u.name)} <small>${e(u.grade)}</small></label>`).join('')||'<span class=mu>Aucun membre dans cette filiale.</span>'}</div>
  <label>Notes</label><input id=pn><button class=btn>Créer la fiche</button></form>
  <div>${ps.map(p=>`<div class="card pat${p.st=='En service'?'':' off'}"><div style="display:flex;justify-content:space-between;gap:8px"><h4>${e(p.c)}</h4><span class=pill>${p.st}</span></div>
- <span>🚗 ${e(p.veh)}</span><span>👥 ${p.crew.map(i=>e(nm(i))).join(', ')}</span>${p.n?`<span class=mu>${e(p.n)}</span>`:''}
+ <span>🚗 ${e(p.veh)}${p.ty?` · <span class=pill>${e(p.ty)}</span>`:''}</span><span>👥 ${p.crew.map(i=>e(nm(i))).join(', ')}</span>${p.n?`<span class=mu>${e(p.n)}</span>`:''}
  <small>${new Date(p.t).toLocaleString('fr-FR')} · ${e(nm(p.by))}</small>
  <div><button class="btn g s" onclick="tgl('${p.id}')">${p.st=='En service'?'Terminer':'Reprendre'}</button> ${cd||p.by==U.id?`<button class="btn g s" onclick="del('patrols','${p.id}')">Supprimer</button>`:''}</div></div>`).join('')||'<p class=mu>Aucune fiche. Crée la première depuis le formulaire.</p>'}</div></div>
  `:''}${FT=='eff'?`<h3 class=st style="margin-top:0">Effectif</h3><div class=tw><table><tr><th>Nom</th><th>Rôle</th><th>Grade</th><th>Médailles</th></tr>${mem.map(u=>`<tr><td>${e(u.name)}</td><td>${rl(u)}</td><td>${e(u.grade)}</td><td>${medals(u.id).length?'🏅 '+medals(u.id).length:'—'}</td></tr>`).join('')}</table></div>
@@ -238,10 +239,9 @@ function fil(k){
  ${cd?`<form class=card onsubmit="addEvent(event,'${k}')"><div class=row style="display:flex;gap:10px"><div style="flex:2"><label>Événement</label><input id=et required></div><div><label>Date</label><input id=ed type=date value="${today()}" required></div><div><label>Médaille décernée</label><select id=em><option value="">Aucune</option>${D.medals.filter(m=>m.f==k).map(m=>`<option value="${m.id}">${e(m.name)}</option>`).join('')}</select></div></div>
  <label>Récompensés</label><div class=chk>${mem.map(u=>`<label><input type=checkbox class=ea value="${u.id}">${e(u.name)}</label>`).join('')}</div><button class=btn>Créer l’événement</button>${k=='BRB'?'<small>Pour le placer sur la carte, utilise « Poser un événement » dans Carte interactive.</small>':''}</form>`:''}
  ${ev.map(x=>`<div class="card" style="margin-top:10px"><b>${e(x.t)}</b><small>${x.d}${x.m?' · 🏅 '+e(medName(x.m)):''}${x.x!=null?' · 📍 sur la carte':''}</small>${x.aw?.length?`<span>${x.aw.map(i=>e(nm(i))).join(', ')}</span>`:''}${cd?`<div><button class="btn g s" onclick="del('events','${x.id}')">Supprimer</button></div>`:''}</div>`).join('')||'<p class=mu style="margin-top:10px">Aucun événement.</p>'}
- `:''}${FT=='cal'&&k=='BRB'&&cd?calHtml(mem):''}${FT=='ges'&&cd?`${cd?`<h3 class=st style="margin-top:0">Véhicules</h3><div class="card row">${D.veh[k].map((x,i)=>`<span class=pill>${e(x)} <a style="cursor:pointer" onclick="D.veh['${k}'].splice(${i},1);save()">✕</a></span>`).join('')}
- <form onsubmit="addVeh(event,'${k}')" style="display:flex;gap:8px;min-width:100%"><input id=vn placeholder="Nouveau véhicule" required><button class=btn style="margin:0">Ajouter</button></form></div>`:''}
+ `:''}${FT=='cal'&&k=='BRB'&&cd?calHtml(mem):''}${FT=='ges'&&cd?`${vehHtml(k)}
  ${k=='RD'&&cd?`<h3 class=st>Menu</h3>${menuForm()}
- <div class=tw><table><tr><th>Produit</th><th>Catégorie</th><th>Prix</th><th>Rupture de stock</th><th></th></tr>${D.menu.map((m,i)=>`<tr><td>${e(m.n)}</td><td>${e(m.c)}</td><td>${pr(m)}</td><td><input type=checkbox style="width:auto" ${m.out?'checked':''} onchange="toggleOut(${i},this.checked)"></td><td><a style="cursor:pointer" onclick="editM=${i};render()">✏️</a> <a style="cursor:pointer" onclick="delMenu(${i})">✕</a></td></tr>`).join('')}</table></div>`:''}`:''}`}
+ <div class=tw><table><tr><th>Produit</th><th>Catégorie</th><th>Prix</th><th>Rupture de stock</th><th></th></tr>${D.menu.map((m,i)=>`<tr><td>${m.img?`<img class=mth src="${m.img}" alt="" style="width:36px;height:36px;vertical-align:middle;margin-right:8px">`:''}${e(m.n)}</td><td>${e(m.c)}</td><td>${pr(m)}</td><td><input type=checkbox style="width:auto" ${m.out?'checked':''} onchange="toggleOut(${i},this.checked)"></td><td><a style="cursor:pointer" onclick="editM=${i};render()">✏️</a> <a style="cursor:pointer" onclick="delMenu(${i})">✕</a></td></tr>`).join('')}</table></div>`:''}`:''}`}
 
 /* ===== ACTIONS ===== */
 async function doLogin(ev){ev.preventDefault();
@@ -254,7 +254,7 @@ async function doSetup(ev){ev.preventDefault();const id=v('si');if(!/^[A-Za-z0-9
 async function myPin(){const p=prompt('Nouveau PIN (4 caractères minimum)');if(!p||p.length<4)return;try{await FBX.setPin(p);alert('PIN modifié.')}catch(x){alert('Déconnecte-toi, reconnecte-toi, puis réessaie.')}}
 function addPatrol(ev,k){ev.preventDefault();const crew=[...document.querySelectorAll('.pm:checked')].map(c=>c.value);
  if(!crew.length)return alert('Sélectionne au moins un membre d’effectif.');
- D.patrols.push({id:uid(),f:k,c:v('pc'),veh:v('pv'),crew,n:v('pn'),st:'En service',t:Date.now(),by:U.id});jlog('Fiche de patrouille « '+v('pc')+' » créée ('+F[k].s+')');save()}
+ D.patrols.push({id:uid(),f:k,c:v('pc'),veh:v('pv'),ty:$('pt')?$('pt').value:'',crew,n:v('pn'),st:'En service',t:Date.now(),by:U.id});jlog('Fiche de patrouille « '+v('pc')+' » créée ('+F[k].s+')');save()}
 function tgl(id){const p=D.patrols.find(x=>x.id==id);p.st=p.st=='En service'?'Terminée':'En service';jlog('Patrouille « '+p.c+' » : '+p.st);save()}
 function addEvent(ev,k){ev.preventDefault();const aw=[...document.querySelectorAll('.ea:checked')].map(c=>c.value),m=v('em'),x={id:uid(),f:k,t:v('et'),d:v('ed'),m,aw};
  D.events.push(x);jlog('Événement « '+x.t+' » créé ('+F[k].s+')'+(m?' · médaille « '+medName(m)+' » à '+aw.length+' personne(s)':''));save()}
@@ -287,7 +287,7 @@ function readImg(fl,max,cb){const im=new Image();im.onload=()=>{const s=Math.min
 function gearHtml(k,cd){const L=D.gear.filter(g=>g.f==k);
  return `<h3 class=st style="margin-top:0">Matériel</h3><p class=mu style="margin:-6px 0 14px">Matériel minimum conseillé pour partir en patrouille, à titre indicatif.</p>
  ${cd?`<form class="card row" onsubmit="addGearList(event,'${k}')"><div style="flex:2"><label>Nouvelle liste de matériel</label><input id=gn required placeholder="Ex : Patrouille, Astreinte Enedis, Astreinte GRDF…"></div><button class=btn>Créer la liste</button></form>`:''}
- <div class=grid style="grid-template-columns:repeat(auto-fill,minmax(360px,1fr));align-items:start;margin-top:14px">${L.map(g=>`<div class="card f"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><h3>${e(g.name)}</h3>
+ <div style="display:flex;flex-direction:column;gap:16px;margin-top:14px">${L.map(g=>`<div class="card f"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><h3>${e(g.name)}</h3>
   ${cd?`<span><button class="btn g s" onclick="renGear('${g.id}')">Renommer</button> <button class="btn g s" onclick="delGear('${g.id}')">Supprimer</button></span>`:''}</div>
   <div class=mats>${g.items.map(it=>cd&&editG==g.id+':'+it.id?
    `<form class=mat style="align-items:stretch;text-align:left" onsubmit="saveItem(event,'${g.id}','${it.id}')"><input id=en value="${e(it.n)}" required><input id=eq type=number min=0 value="${it.q}"><input id=ei type=file accept="image/*"><div><button class="btn s">OK</button> <button type=button class="btn g s" onclick="editG=null;render()">Annuler</button></div></form>`:
@@ -303,15 +303,36 @@ function qtyItem(lid,iid,d){const it=gl(lid).items.find(x=>x.id==iid);it.q=Math.
 function delItem(lid,iid){const g=gl(lid),it=g.items.find(x=>x.id==iid);if(confirm('Supprimer « '+it.n+' » ?')){jlog('Matériel : « '+it.n+' » retiré de « '+g.name+' »');g.items=g.items.filter(x=>x.id!=iid);save()}}
 function saveItem(ev,lid,iid){ev.preventDefault();const g=gl(lid),it=g.items.find(x=>x.id==iid),fl=$('ei').files[0],
  fin=img=>{it.n=v('en');it.q=parseInt(v('eq'))||0;if(img)it.img=img;jlog('Matériel : « '+it.n+' » modifié dans « '+g.name+' »');editG=null;save()};fl?readImg(fl,192,fin):fin('')}
-function addVeh(ev,k){ev.preventDefault();D.veh[k].push(v('vn'));save()}
+const vn=x=>typeof x=='string'?{n:x,l:''}:x,q=t=>e(JSON.stringify(t));
+function vehSel(k){const V=D.veh[k].map(vn),ls=[...(D.vl[k]||[]),...(V.some(x=>!x.l)?['']:[])],l0=ls[0]??'';
+ return `${ls.some(Boolean)?`<label>Type de patrouille</label><select id=pt onchange="fillVeh('${k}')">${ls.map(l=>`<option value="${e(l)}">${e(l||'Général')}</option>`).join('')}</select>`:''}
+ <label>Véhicule</label><select id=pv>${V.filter(x=>x.l==l0).map(x=>`<option>${e(x.n)}</option>`).join('')}</select>`}
+function fillVeh(k){const l=$('pt').value;$('pv').innerHTML=D.veh[k].map(vn).filter(x=>x.l==l).map(x=>`<option>${e(x.n)}</option>`).join('')}
+function vehHtml(k){const V=D.veh[k].map(vn),ls=[...(D.vl[k]||[]),...(V.some(x=>!x.l)?['']:[])];
+ return `<h3 class=st style="margin-top:0">Véhicules par type de patrouille</h3>
+ <form class="card row" onsubmit="addVList(event,'${k}')"><div style="flex:2"><label>Nouvelle liste de véhicules</label><input id=vl required placeholder="Ex : Sanef, Astreinte Enedis, Astreinte GRDF…"></div><button class=btn>Créer la liste</button></form>
+ <div style="display:flex;flex-direction:column;gap:16px;margin-top:14px">${ls.map(l=>`<div class="card f"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><h3>${e(l||'Général')}</h3>${l?`<span><button class="btn g s" onclick="renVList('${k}',${q(l)})">Renommer</button> <button class="btn g s" onclick="delVList('${k}',${q(l)})">Supprimer</button></span>`:''}</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">${V.map((x,i)=>x.l==l?`<span class=pill>${e(x.n)} <a style="cursor:pointer" onclick="delVeh('${k}',${i})">✕</a></span>`:'').join('')||'<span class=mu>Aucun véhicule.</span>'}</div>
+  <form onsubmit="addVeh(event,'${k}',${q(l)})" style="display:flex;gap:8px;margin-top:6px"><input name=n placeholder="Nouveau véhicule" required><button class="btn s" style="margin:0">Ajouter</button></form></div>`).join('')}</div>`}
+function addVList(ev,k){ev.preventDefault();const n=v('vl');D.vl[k]=D.vl[k]||[];if(D.vl[k].includes(n))return alert('Cette liste existe déjà.');D.vl[k].push(n);jlog('Véhicules : liste « '+n+' » créée ('+F[k].s+')');save()}
+function renVList(k,l){const n=(prompt('Nouveau nom de la liste',l)||'').trim();if(!n||n==l||D.vl[k].includes(n))return;
+ D.vl[k]=D.vl[k].map(x=>x==l?n:x);D.veh[k]=D.veh[k].map(vn).map(x=>x.l==l?{...x,l:n}:x);jlog('Véhicules : liste « '+l+' » renommée « '+n+' »');save()}
+function delVList(k,l){if(confirm('Supprimer la liste « '+l+' » et ses véhicules ?')){jlog('Véhicules : liste « '+l+' » supprimée ('+F[k].s+')');D.vl[k]=D.vl[k].filter(x=>x!=l);D.veh[k]=D.veh[k].map(vn).filter(x=>x.l!=l);save()}}
+function addVeh(ev,k,l){ev.preventDefault();const n=ev.target.n.value.trim();if(!n)return;D.veh[k].push({n,l:l||''});jlog('Véhicules : « '+n+' » ajouté'+(l?' à « '+l+' »':'')+' ('+F[k].s+')');save()}
+function delVeh(k,i){const x=vn(D.veh[k][i]);if(confirm('Retirer « '+x.n+' » ?')){jlog('Véhicules : « '+x.n+' » retiré ('+F[k].s+')');D.veh[k].splice(i,1);save()}}
 function menuForm(){const m=editM!=null?D.menu[editM]:null,fr=!!m&&m.p==null,cats=[...new Set(D.menu.map(x=>x.c))];
  return `<form class="card row" onsubmit="addMenu(event)"><div style="flex:2"><label>${m?'Modifier le produit':'Produit'}</label><input id=mn value="${e(m?.n||'')}" required></div>
  <div><label>Prix</label><input id=mp type=number step=any value="${m&&!fr?m.p:''}" ${fr?'disabled':'required'}></div>
  <div><label>Tarif libre</label><select id=mf onchange="$('mp').disabled=this.value=='1';$('mp').required=this.value!='1'"><option value=0>Non</option><option value=1${fr?' selected':''}>Oui</option></select></div>
  <div><label>Catégorie</label><input id=mc list=mcats value="${e(m?.c||'Douceurs')}" required><datalist id=mcats>${cats.map(c=>`<option value="${e(c)}">`).join('')}</datalist></div>
+ <div><label>Image (carrée)</label><input id=mi type=file accept="image/*">${m?.img?`<label style="display:flex;gap:6px;align-items:center;color:var(--tx)"><input type=checkbox id=mrm style="width:auto">Retirer l’image</label>`:''}</div>
  <button class=btn>${m?'Enregistrer':'Ajouter'}</button>${m?`<button type=button class="btn g" onclick="editM=null;render()">Annuler</button>`:''}</form>`}
-function addMenu(ev){ev.preventDefault();const o={n:v('mn'),p:v('mf')=='1'?null:parseFloat(v('mp')),c:v('mc')};
- if(editM!=null){Object.assign(D.menu[editM],o);jlog('Menu : « '+o.n+' » modifié');editM=null}else{D.menu.push(o);jlog('Menu : « '+o.n+' » ajouté')}save()}
+const cfgSize=()=>JSON.stringify({veh:D.veh,vl:D.vl,menu:D.menu,logos:D.logos}).length;
+function addMenu(ev){ev.preventDefault();const o={n:v('mn'),p:v('mf')=='1'?null:parseFloat(v('mp')),c:v('mc')},fl=$('mi').files[0],rm=$('mrm')?.checked,bak=JSON.stringify(D.menu),
+ fin=img=>{if(editM!=null){const m=D.menu[editM];Object.assign(m,o);if(img)m.img=img;else if(rm)delete m.img;jlog('Menu : « '+o.n+' » modifié')}else{if(img)o.img=img;D.menu.push(o);jlog('Menu : « '+o.n+' » ajouté')}
+  if(cfgSize()>950000){D.menu=JSON.parse(bak);D.logs.pop();return alert('Limite de stockage atteinte : retire des images du menu avant d’en ajouter.')}
+  editM=null;save()};
+ fl?readImg(fl,160,fin):fin('')}
 function delMenu(i){const m=D.menu[i];if(confirm('Supprimer « '+m.n+' » du menu ?')){jlog('Menu : « '+m.n+' » supprimé');D.menu.splice(i,1);save()}}
 function addNews(ev){ev.preventDefault();D.news.push({id:uid(),t:v('nt'),x:v('nx'),d:new Date().toLocaleDateString('fr-FR'),by:U.id});jlog('Annonce publiée : « '+v('nt')+' »');save()}
 function addTx(ev){ev.preventDefault();const f=v('xf');if(!canD(f))return;
@@ -382,11 +403,12 @@ const app=initializeApp(C),auth=A.getAuth(app),db=S.getFirestore(app);
 const COLS=['users','patrols','events','tx','news','maps','medals','sales','logs','gear'],em=id=>id.toLowerCase()+'@prestige-compagnie.com',pw=p=>p+'#Prestige';
 const key=(c,x)=>c=='users'?uk(x):x.id;
 let snap={},unsubs=[],loaded={},ready=false,cfgJ='',settingUp=false,sec=null;
-const fail=x=>{console.warn(x);alert('Action refusée par le serveur ('+(x.code||'erreur')+').')};
-const cfgOf=()=>JSON.stringify({veh:D.veh,menu:D.menu,logos:D.logos});
+let lastFail=0;const W={users:5,patrols:1,events:2,tx:2,news:2,maps:2,medals:2,gear:2,sales:2,logs:1};
+const fail=(x,c)=>{console.warn(c,x);if(c=='logs'||Date.now()-lastFail<4000)return;lastFail=Date.now();alert('Action refusée par le serveur ('+(x.code||'erreur')+') — collection « '+(c||'?')+' ». Vérifie les règles Firebase ou tes droits.')};
+const cfgOf=()=>JSON.stringify({veh:D.veh,vl:D.vl,menu:D.menu,logos:D.logos});
 
 /* Données publiques : menu, véhicules, logos */
-S.onSnapshot(S.doc(db,'cfg','main'),d=>{const x=d.data();if(x){D.veh={BRB:[],RD:[],PR:[],...(x.veh||{})};D.menu=x.menu||[];D.logos=x.logos||{};cfgJ=cfgOf()}softRender()},()=>{});
+S.onSnapshot(S.doc(db,'cfg','main'),d=>{const x=d.data();if(x){D.veh={BRB:[],RD:[],PR:[],...(x.veh||{})};D.vl={BRB:[],RD:[],PR:[],...(x.vl||{})};D.menu=x.menu||[];D.logos=x.logos||{};cfgJ=cfgOf()}softRender()},()=>{});
 try{SETUP=!(await S.getDoc(S.doc(db,'meta','init'))).exists()}catch(x){}
 
 function listen(u){unsubs.forEach(f=>f());unsubs=[];loaded={};ready=false;AUTHID=u.email.split('@')[0];
@@ -398,11 +420,11 @@ A.onAuthStateChanged(auth,u=>{if(settingUp)return;
 
 /* Envoie uniquement ce qui a changé */
 function sync(){if(!ready)return;
- for(const c of COLS){const nw={},old=snap[c]||{};D[c].forEach(x=>nw[key(c,x)]=x);
-  for(const k in nw){const j=JSON.stringify(nw[k]);if(old[k]!==j){old[k]=j;S.setDoc(S.doc(db,c,k),JSON.parse(j)).catch(fail)}}
-  for(const k in old)if(!(k in nw)){delete old[k];S.deleteDoc(S.doc(db,c,k)).catch(fail)}
+ for(const c of COLS){if(lvl()<W[c])continue;const nw={},old=snap[c]||{};D[c].forEach(x=>nw[key(c,x)]=x);
+  for(const k in nw){const j=JSON.stringify(nw[k]);if(old[k]!==j){old[k]=j;S.setDoc(S.doc(db,c,k),JSON.parse(j)).catch(x=>fail(x,c))}}
+  for(const k in old)if(!(k in nw)){delete old[k];S.deleteDoc(S.doc(db,c,k)).catch(x=>fail(x,c))}
   snap[c]=old}
- const cj=cfgOf();if(cj!==cfgJ){cfgJ=cj;S.setDoc(S.doc(db,'cfg','main'),JSON.parse(cj)).catch(fail)}}
+ const cj=cfgOf();if(cj!==cfgJ&&lvl()>=2){cfgJ=cj;S.setDoc(S.doc(db,'cfg','main'),JSON.parse(cj)).catch(x=>fail(x,'cfg'))}}
 
 window.FBX={sync,
  login:async(id,pin)=>{const b=id.toLowerCase();let g=0;try{const d=await S.getDoc(S.doc(db,'meta','gens'));g=(d.exists()&&d.data()[b])||0}catch(x){}
