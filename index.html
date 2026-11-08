@@ -144,7 +144,7 @@ home(){
 menu(){
  const cats=[...new Set(D.menu.map(m=>m.c))];
  return `<div class=ph><div class=lgo>${lg('RD')}</div><div><h2>Menu de la Roue des Délices</h2><p class=mu>L’excellence au pas de votre porte</p></div></div>
- <div class=grid style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr));align-items:start">${cats.map(c=>`<div class="card f" style="--ac:${F.RD.c};gap:2px"><h3 style="margin-bottom:6px">${e(c)}</h3>${D.menu.filter(m=>m.c==c).map(m=>`<div class=mi><span>${e(m.n)}</span><b>${pr(m)}</b></div>`).join('')}</div>`).join('')||'<p class=mu>Le menu arrive bientôt.</p>'}</div>`},
+ <div class=grid style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr));align-items:start">${cats.map(c=>`<div class="card f" style="--ac:${F.RD.c};gap:2px"><h3 style="margin-bottom:6px">${e(c)}</h3>${D.menu.filter(m=>m.c==c).map(m=>`<div class=mi${m.out?' style="opacity:.55"':''}><span${m.out?' style="text-decoration:line-through"':''}>${e(m.n)}</span>${m.out?'<span class=pill style="--ac:#f87171">Rupture de stock</span>':`<b>${pr(m)}</b>`}</div>`).join('')}</div>`).join('')||'<p class=mu>Le menu arrive bientôt.</p>'}</div>`},
 
 login(){return `<form class="card login" onsubmit="doLogin(event)"><div class=lgo style="width:110px;height:110px;margin:0 auto 6px">${lg('main')}</div><h2>Connexion</h2><p class=mu>Espace réservé aux salariés.</p>
  <label>Identifiant</label><input id=li placeholder="Ex : S.Mouveau" autocomplete=username required>
@@ -237,7 +237,7 @@ function fil(k){
  `:''}${FT=='cal'&&k=='BRB'&&cd?calHtml(mem):''}${FT=='ges'&&cd?`${cd?`<h3 class=st style="margin-top:0">Véhicules</h3><div class="card row">${D.veh[k].map((x,i)=>`<span class=pill>${e(x)} <a style="cursor:pointer" onclick="D.veh['${k}'].splice(${i},1);save()">✕</a></span>`).join('')}
  <form onsubmit="addVeh(event,'${k}')" style="display:flex;gap:8px;min-width:100%"><input id=vn placeholder="Nouveau véhicule" required><button class=btn style="margin:0">Ajouter</button></form></div>`:''}
  ${k=='RD'&&cd?`<h3 class=st>Menu</h3><form class="card row" onsubmit="addMenu(event)"><div style="flex:2"><label>Produit</label><input id=mn required></div><div><label>Prix</label><input id=mp type=number step=any required></div><div><label>Tarif libre</label><select id=mf onchange="$('mp').disabled=this.value=='1';$('mp').required=this.value!='1'"><option value=0>Non</option><option value=1>Oui</option></select></div><div><label>Catégorie</label><input id=mc value="Douceurs" required></div><button class=btn>Ajouter</button></form>
- <div class=tw><table>${D.menu.map((m,i)=>`<tr><td>${e(m.n)}</td><td>${e(m.c)}</td><td>${pr(m)}</td><td><a style="cursor:pointer" onclick="D.menu.splice(${i},1);save()">✕</a></td></tr>`).join('')}</table></div>`:''}`:''}`}
+ <div class=tw><table><tr><th>Produit</th><th>Catégorie</th><th>Prix</th><th>Rupture de stock</th><th></th></tr>${D.menu.map((m,i)=>`<tr><td>${e(m.n)}</td><td>${e(m.c)}</td><td>${pr(m)}</td><td><input type=checkbox style="width:auto" ${m.out?'checked':''} onchange="toggleOut(${i},this.checked)"></td><td><a style="cursor:pointer" onclick="D.menu.splice(${i},1);save()">✕</a></td></tr>`).join('')}</table></div>`:''}`:''}`}
 
 /* ===== ACTIONS ===== */
 async function doLogin(ev){ev.preventDefault();
@@ -275,6 +275,7 @@ function calTx(){const tot=D.sales.reduce((a,x)=>a+x.a,0),i=D.tx.findIndex(t=>t.
 function addSale(ev){ev.preventDefault();if(!canD('BRB'))return;D.sales.push({id:uid(),rep:v('sr'),b:v('sb'),a:parseFloat(v('sa')),d:new Date().toLocaleDateString('fr-FR'),by:U.id});jlog('Vente calendrier 2027 : '+v('sa')+' $ — représentant '+nm(v('sr'))+', donateur '+v('sb'));calTx();save()}
 function delSale(id){if(confirm('Supprimer cette vente ?')){const x=D.sales.find(y=>y.id==id);jlog('Vente calendrier supprimée : '+(x?x.a+' $ ('+x.b+')':''));D.sales=D.sales.filter(x=>x.id!=id);calTx();save()}}
 function purgeLogs(){const lim=Date.now()-60*864e5;if(confirm('Supprimer les entrées de plus de 60 jours ?')){D.logs=D.logs.filter(l=>l.t>=lim);save()}}
+function toggleOut(i,o){const m=D.menu[i];m.out=o;jlog('Menu : « '+m.n+' » '+(o?'en rupture de stock':'de nouveau disponible'));save()}
 function addVeh(ev,k){ev.preventDefault();D.veh[k].push(v('vn'));save()}
 function addMenu(ev){ev.preventDefault();D.menu.push({n:v('mn'),p:v('mf')=='1'?null:parseFloat(v('mp')),c:v('mc')});save()}
 function addNews(ev){ev.preventDefault();D.news.push({id:uid(),t:v('nt'),x:v('nx'),d:new Date().toLocaleDateString('fr-FR'),by:U.id});jlog('Annonce publiée : « '+v('nt')+' »');save()}
