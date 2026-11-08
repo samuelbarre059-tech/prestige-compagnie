@@ -70,18 +70,18 @@ const F={
  RD:{n:'La Roue des Délices',s:'La Roue des Délices',c:'#3fb0bf',i:'img/rd.png',d:'Douceurs, repas et boissons préparés sur place, partout en ville.'},
  PR:{n:'Le Petit Reporter',s:'Le Petit Reporter',c:'#dc7a72',i:'img/pr.png',d:'L’actualité de la ville, racontée par ceux qui la vivent.'}};
 const R={president:['Président',4],vp:['Vice-Président',3],directeur:['Directeur',2],salarie:['Salarié',1]};
-const IC={home:'🏠',menu:'🍽️',map:'🗺️',adm:'📋',tre:'💰',ges:'⚙️'};
+const IC={home:'🏠',menu:'🍽️',map:'🗺️',adm:'📋',tre:'💰',ges:'⚙️',jnl:'📜'};
 const seed=()=>({users:[{id:'S.Mouveau',name:'Samuel Mouveau',pin:'9999',role:'salarie',admin:true,fs:[],dirs:[],grade:'Administrateur'}],
- patrols:[],events:[],tx:[],news:[],maps:[],medals:[],
+ patrols:[],events:[],tx:[],news:[],maps:[],medals:[],sales:[],logs:[],
  veh:{BRB:['BRB-01 · Van de balisage','BRB-02 · Fourgon'],RD:['RD-01 · Food truck'],PR:['PR-01 · SUV presse']},
  menu:[{n:'Muffin chocolat',p:5,c:'Douceurs'},{n:'Café chaud',p:3,c:'Boissons'}],logos:{}});
 /* Compatibilité anciens comptes : admin/membre/f -> admin(bool)/salarie/fs[] */
 const norm=u=>{u={...u};if(u.role=='admin'){u.admin=true;u.role='salarie'}if(u.role=='membre')u.role='salarie';
  u.fs=u.fs||(u.f?[u.f]:[]);u.dirs=u.dirs||(u.role=='directeur'&&u.f?[u.f]:[]);if(u.role=='directeur')u.dirs.forEach(k=>{if(!u.fs.includes(k))u.fs.push(k)});delete u.f;delete u.medals;return u};
-const load=()=>{let d;try{d=JSON.parse(localStorage.getItem(KEY))}catch(x){}d=d||seed();d.users=d.users.map(norm);d.maps=d.maps||[];d.medals=d.medals||[];return d};
+const load=()=>{let d;try{d=JSON.parse(localStorage.getItem(KEY))}catch(x){}d=d||seed();d.users=d.users.map(norm);d.maps=d.maps||[];d.medals=d.medals||[];d.sales=d.sales||[];d.logs=d.logs||[];return d};
 const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(D))}catch(x){alert('Stockage plein : réduis la taille des logos.')}};
-const FB_ON=!!window.FIREBASE_CONFIG;let SETUP=false,AUTHID=null,pending=false,mKeep=false,curMap='base',editU=null,FT='pat';
-let D=FB_ON?{users:[],patrols:[],events:[],tx:[],news:[],maps:[],medals:[],veh:{BRB:[],RD:[],PR:[]},menu:[],logos:{}}:load(),U=null,P='home',placing=false;
+const FB_ON=!!window.FIREBASE_CONFIG;let SETUP=false,AUTHID=null,pending=false,mKeep=false,curMap='base',editU=null,FT='pat',jf='';
+let D=FB_ON?{users:[],patrols:[],events:[],tx:[],news:[],maps:[],medals:[],sales:[],logs:[],veh:{BRB:[],RD:[],PR:[]},menu:[],logos:{}}:load(),U=null,P='home',placing=false;
 if(!FB_ON)try{U=D.users.find(u=>u.id==sessionStorage.s)||null}catch(x){}
 const save=()=>{FB_ON?window.FBX?.sync():persist();render()};
 /* Rafraîchit sans casser un formulaire en cours de saisie */
@@ -100,6 +100,7 @@ const inF=(u,k)=>(u.fs||[]).includes(k);
 const canD=f=>lvl()>=3||(lvl()==2&&(U.dirs||[]).includes(f));
 const canV=f=>lvl()>=3||(!!U&&inF(U,f));
 const rl=u=>u.role=='directeur'?'Directeur '+(u.dirs||[]).map(k=>F[k].s).join(' / '):R[u.role]?.[0]||'Salarié';
+const uk=u=>u.id.toLowerCase()+(u.g?'-'+u.g:'');
 const usr=id=>D.users.find(u=>u.id==id),nm=id=>usr(id)?.name||id;
 const bal=f=>D.tx.filter(t=>!f||t.f==f).reduce((a,t)=>a+t.a,0);
 const money=n=>n.toLocaleString('fr-FR')+' $';
@@ -107,21 +108,22 @@ const pr=m=>m.p==null?'Tarif libre':m.p+' $';
 const lu=k=>D.logos[k]||(k=='main'?'img/prestige.png':k=='banner'?'img/banniere.png':F[k].i);
 const lg=k=>`<img src="${lu(k)}" alt="">`;
 const go=p=>{P=p;FT='pat';placing=false;if(p!='map')mKeep=false;render();scrollTo(0,0)};
-const del=(a,id)=>{if(confirm('Supprimer cet élément ?')){D[a]=D[a].filter(x=>x.id!=id);save()}};
+const del=(a,id)=>{if(confirm('Supprimer cet élément ?')){const x=D[a].find(y=>y.id==id);jlog('Suppression · '+({patrols:'fiche de patrouille',events:'événement',news:'annonce',tx:'opération de trésorerie'}[a]||a)+' « '+(x?.c||x?.t||x?.l||'')+' »');D[a]=D[a].filter(y=>y.id!=id);save()}};
+const jlog=a=>D.logs.push({id:uid(),t:Date.now(),by:U?.id||'?',a});
 const today=()=>new Date().toISOString().slice(0,10);
 
 /* ===== NAVIGATION ===== */
 function nav(){
  const it=[['home',U?'Tableau de bord':'Accueil'],['menu','Menu de la Roue des Délices']];
  if(U){Object.keys(F).filter(canV).forEach(k=>it.push([k,F[k].s]));it.push(['map','Carte interactive']);
-  if(lvl()>=2)it.push(['adm','Administratif'],['tre','Trésorerie']);if(lvl()>=5)it.push(['ges','Gestion'])}
+  if(lvl()>=2)it.push(['adm','Administratif'],['tre','Trésorerie']);if(lvl()>=5)it.push(['ges','Gestion'],['jnl','Journal d’activité'])}
  else{it.push(['login','Connexion salariés']);if(SETUP)it.push(['setup','Première installation'])}
  return it.map(([k,t])=>`<a class="nv${P==k?' on':''}" tabindex=0 onclick="go('${k}')" style="--ac:${F[k]?.c||'#d4b055'}">${F[k]?`<img class=ni src="${lu(k)}" alt="">`:IC[k]||'🔑'} ${t}</a>`).join('')}
 
 function render(){
- if(FB_ON)U=AUTHID?D.users.find(u=>u.id.toLowerCase()==AUTHID)||null:null;else if(U)U=usr(U.id)||null;
+ if(FB_ON)U=AUTHID?D.users.find(u=>uk(u)==AUTHID)||null:null;else if(U)U=usr(U.id)||null;
  if(U&&(P=='login'||P=='setup'))P='home';
- const need={map:1,adm:2,tre:2,ges:5};
+ const need={map:1,adm:2,tre:2,ges:5,jnl:5};
  if(P!='login'&&P!='setup'&&P!='menu'&&P!='home'&&((F[P]&&!canV(P))||(need[P]&&lvl()<need[P])))P=U?'home':'login';
  $('app').innerHTML=`<aside><div class=brand>${lg('main')}Prestige Compagnie</div>${nav()}<div class=sp></div>
  ${U?`<div class=me><b>${e(U.name)}</b><span class=mu>${rl(U)}${U.role!='directeur'&&U.fs.length?' · '+U.fs.map(k=>F[k].s).join(', '):''}</span><br><button class="btn g s" style="margin-top:8px" onclick="logout()">Se déconnecter</button>${FB_ON?' <button class="btn g s" onclick="myPin()">Mon PIN</button>':''}</div>`:''}</aside>
@@ -184,7 +186,12 @@ tre(){
  <div><label>Type</label><select id=xs><option value=1>Recette</option><option value=-1>Dépense</option></select></div>
  <div><label>Montant</label><input id=xa type=number min=0 step=any required></div><div style="flex:2"><label>Libellé</label><input id=xl required></div><button class=btn>Enregistrer</button></form>
  <div class=tw><table><tr><th>Date</th><th>Filiale</th><th>Libellé</th><th>Auteur</th><th>Montant</th><th></th></tr>
- ${tx.map(t=>`<tr><td>${t.d}</td><td>${F[t.f].s}</td><td>${e(t.l)}</td><td>${e(nm(t.by))}</td><td class="${t.a>=0?'plus':'moins'}">${t.a>=0?'+':''}${money(t.a)}</td><td>${lvl()>=3?`<a class=mu style="cursor:pointer" onclick="del('tx','${t.id}')">✕</a>`:''}</td></tr>`).join('')||'<tr><td colspan=6 class=mu>Aucune opération.</td></tr>'}</table></div>`},
+ ${tx.map(t=>`<tr><td>${t.d}</td><td>${F[t.f].s}</td><td>${e(t.l)}</td><td>${e(nm(t.by))}</td><td class="${t.a>=0?'plus':'moins'}">${t.a>=0?'+':''}${money(t.a)}</td><td>${lvl()>=3&&t.id!='cal2027'?`<a class=mu style="cursor:pointer" onclick="del('tx','${t.id}')">✕</a>`:''}</td></tr>`).join('')||'<tr><td colspan=6 class=mu>Aucune opération.</td></tr>'}</table></div>`},
+
+jnl(){const us=[...new Set(D.logs.map(l=>l.by))],L=D.logs.filter(l=>!jf||l.by==jf).sort((a,b)=>b.t-a.t).slice(0,300);
+ return `<div class=ph><h2>Journal d’activité</h2></div><div class="card row" style="margin-bottom:12px;align-items:end"><div><label>Utilisateur</label><select onchange="jf=this.value;render()"><option value="">Tous</option>${us.map(i=>`<option value="${e(i)}"${i==jf?' selected':''}>${e(nm(i))}</option>`).join('')}</select></div>
+ <span class=mu style="flex:3">${L.length} entrée(s) affichée(s) · visible uniquement par les admins.</span><button class="btn g" onclick="purgeLogs()">Supprimer les entrées de plus de 60 jours</button></div>
+ <div class=tw><table><tr><th>Date</th><th>Utilisateur</th><th>Action</th></tr>${L.map(l=>`<tr><td style="white-space:nowrap">${new Date(l.t).toLocaleString('fr-FR')}</td><td>${e(nm(l.by))}</td><td>${e(l.a)}</td></tr>`).join('')||'<tr><td colspan=3 class=mu>Aucune entrée.</td></tr>'}</table></div>`},
 
 ges(){const eu=editU?usr(editU):null,self=!!(eu&&U&&eu.id==U.id),k0=eu?roleKey(eu):'salarie';
  return `<div class=ph><h2>Gestion</h2></div><h3 class=st style="margin-top:0">${eu?'Modifier '+e(eu.name):'Créer un compte'}</h3>
@@ -192,14 +199,14 @@ ges(){const eu=editU?usr(editU):null,self=!!(eu&&U&&eu.id==U.id),k0=eu?roleKey(e
  <div><label>Nom complet</label><input id=un value="${e(eu?.name||'')}" ${eu?'':`oninput="$('ui').value=genId(this.value)"`} required></div>
  <div><label>Identifiant</label><input id=ui value="${e(eu?.id||'')}" ${eu?'disabled':''} required></div>
  ${eu?'':'<div><label>PIN</label><input id=up required></div>'}
- <div><label>Rôle</label><select id=ur ${self?'disabled':''}>${roleOpts().map(([k,t])=>`<option value="${k}"${k==k0?' selected':''}>${t}</option>`).join('')}</select></div>
+ <div><label>Rôle</label><select id=ur>${roleOpts().map(([k,t])=>`<option value="${k}"${k==k0?' selected':''}>${t}</option>`).join('')}</select></div>
  <div><label>Grade</label><input id=ug value="${e(eu?.grade||'')}" placeholder="Ex : Agent"></div></div>
  <label>Filiales (plusieurs possibles)</label><div class=chk style="display:flex;gap:18px;flex-wrap:wrap;max-height:none">${Object.entries(F).map(([k,f])=>`<label><input type=checkbox class=fc value=${k}${eu&&inF(eu,k)?' checked':''}>${f.s}</label>`).join('')}</div>
  <label style="display:flex;gap:8px;align-items:center;color:var(--tx);margin-top:10px"><input type=checkbox id=ua style="width:auto" ${eu?.admin?'checked':''} ${self?'disabled':''}> Accès administrateur (tous les droits)</label>
  <div><button class=btn>${eu?'Enregistrer':'Créer le compte'}</button>${eu?` <button type=button class="btn g" onclick="editU=null;render()">Annuler</button>`:''}</div></form>
  <div class=tw><table><tr><th>Nom</th><th>ID</th><th>Rôle</th><th>Filiales</th><th>Grade</th><th></th></tr>
  ${D.users.map(u=>`<tr><td>${e(u.name)}</td><td>${e(u.id)}</td><td>${rl(u)}${u.admin?' <span class=pill>Admin</span>':''}</td><td>${(u.fs||[]).map(k=>F[k].s).join(', ')||'—'}</td><td>${e(u.grade)}</td>
- <td><button class="btn g s" onclick="editU='${u.id}';render();scrollTo(0,0)">Modifier</button> ${FB_ON?'':`<button class="btn g s" onclick="chPin('${u.id}')">PIN</button> `}${u.id!=U.id?`<button class="btn g s" onclick="delUser('${u.id}')">Supprimer</button>`:''}</td></tr>`).join('')}</table></div>
+ <td><button class="btn g s" onclick="editU='${u.id}';render();scrollTo(0,0)">Modifier</button> ${u.id!=U.id?`<button class="btn g s" onclick="resetPin('${u.id}')">Nouveau PIN</button> `:''}${u.id!=U.id?`<button class="btn g s" onclick="delUser('${u.id}')">Supprimer</button>`:''}</td></tr>`).join('')}</table></div>
  <h3 class=st>Logos et bandeau</h3><div class=grid>${['banner','main',...Object.keys(F)].map(k=>`<div class=card><b>${k=='main'?'Écusson Prestige':k=='banner'?'Bandeau Prestige (accueil)':F[k].n}</b>
  ${k=='banner'?`<img src="${lg('banner').match(/src="([^"]+)"/)[1]}" alt="" style="width:100%;background:#fff;border-radius:10px;padding:4px">`:`<div class=lgo>${lg(k)}</div>`}
  <input type=file accept="image/*" onchange="setLogo('${k}',this)">${D.logos[k]?`<button class="btn g s" onclick="delete D.logos['${k}'];save()">Revenir à l’original</button>`:''}</div>`).join('')}</div>
@@ -210,7 +217,7 @@ Object.keys(F).forEach(k=>PG[k]=()=>fil(k));
 function fil(k){
  const f=F[k],cd=canD(k),mem=D.users.filter(u=>inF(u,k)),ps=D.patrols.filter(p=>p.f==k).sort((a,b)=>b.t-a.t),ev=D.events.filter(x=>x.f==k).sort((a,b)=>b.d.localeCompare(a.d));
  return `<div class=ph><div class=lgo>${lg(k)}</div><div><h2>${f.n}</h2><p class=mu>${f.d}</p></div></div>
- <div class=tabs>${[['pat','Patrouilles'+(ps.some(p=>p.st=='En service')?' · '+ps.filter(p=>p.st=='En service').length:'')],['eff','Effectif'],['med','Médailles'],['evt','Événements'],...(cd?[['ges','Gestion']]:[])].map(([t,l])=>`<a class="tb${FT==t?' on':''}" tabindex=0 onclick="FT='${t}';render()">${l}</a>`).join('')}</div>
+ <div class=tabs>${[['pat','Patrouilles'+(ps.some(p=>p.st=='En service')?' · '+ps.filter(p=>p.st=='En service').length:'')],['eff','Effectif'],['med','Médailles'],['evt','Événements'],...(cd&&k=='BRB'?[['cal','Calendrier 2027']]:[]),...(cd?[['ges','Gestion']]:[])].map(([t,l])=>`<a class="tb${FT==t?' on':''}" tabindex=0 onclick="FT='${t}';render()">${l}</a>`).join('')}</div>
  ${FT=='pat'?`<h3 class=st style="margin-top:0">Fiches de patrouille</h3><div class=two>
  <form class=card onsubmit="addPatrol(event,'${k}')"><h4>Nouvelle fiche</h4><label>Indicatif</label><input id=pc required placeholder="Ex : ${f.s.slice(0,3).toUpperCase()}-Alpha 1">
  <label>Véhicule</label><select id=pv>${D.veh[k].map(x=>`<option>${e(x)}</option>`).join('')}</select>
@@ -227,7 +234,7 @@ function fil(k){
  ${cd?`<form class=card onsubmit="addEvent(event,'${k}')"><div class=row style="display:flex;gap:10px"><div style="flex:2"><label>Événement</label><input id=et required></div><div><label>Date</label><input id=ed type=date value="${today()}" required></div><div><label>Médaille décernée</label><select id=em><option value="">Aucune</option>${D.medals.filter(m=>m.f==k).map(m=>`<option value="${m.id}">${e(m.name)}</option>`).join('')}</select></div></div>
  <label>Récompensés</label><div class=chk>${mem.map(u=>`<label><input type=checkbox class=ea value="${u.id}">${e(u.name)}</label>`).join('')}</div><button class=btn>Créer l’événement</button>${k=='BRB'?'<small>Pour le placer sur la carte, utilise « Poser un événement » dans Carte interactive.</small>':''}</form>`:''}
  ${ev.map(x=>`<div class="card" style="margin-top:10px"><b>${e(x.t)}</b><small>${x.d}${x.m?' · 🏅 '+e(medName(x.m)):''}${x.x!=null?' · 📍 sur la carte':''}</small>${x.aw?.length?`<span>${x.aw.map(i=>e(nm(i))).join(', ')}</span>`:''}${cd?`<div><button class="btn g s" onclick="del('events','${x.id}')">Supprimer</button></div>`:''}</div>`).join('')||'<p class=mu style="margin-top:10px">Aucun événement.</p>'}
- `:''}${FT=='ges'&&cd?`${cd?`<h3 class=st style="margin-top:0">Véhicules</h3><div class="card row">${D.veh[k].map((x,i)=>`<span class=pill>${e(x)} <a style="cursor:pointer" onclick="D.veh['${k}'].splice(${i},1);save()">✕</a></span>`).join('')}
+ `:''}${FT=='cal'&&k=='BRB'&&cd?calHtml(mem):''}${FT=='ges'&&cd?`${cd?`<h3 class=st style="margin-top:0">Véhicules</h3><div class="card row">${D.veh[k].map((x,i)=>`<span class=pill>${e(x)} <a style="cursor:pointer" onclick="D.veh['${k}'].splice(${i},1);save()">✕</a></span>`).join('')}
  <form onsubmit="addVeh(event,'${k}')" style="display:flex;gap:8px;min-width:100%"><input id=vn placeholder="Nouveau véhicule" required><button class=btn style="margin:0">Ajouter</button></form></div>`:''}
  ${k=='RD'&&cd?`<h3 class=st>Menu</h3><form class="card row" onsubmit="addMenu(event)"><div style="flex:2"><label>Produit</label><input id=mn required></div><div><label>Prix</label><input id=mp type=number step=any required></div><div><label>Tarif libre</label><select id=mf onchange="$('mp').disabled=this.value=='1';$('mp').required=this.value!='1'"><option value=0>Non</option><option value=1>Oui</option></select></div><div><label>Catégorie</label><input id=mc value="Douceurs" required></div><button class=btn>Ajouter</button></form>
  <div class=tw><table>${D.menu.map((m,i)=>`<tr><td>${e(m.n)}</td><td>${e(m.c)}</td><td>${pr(m)}</td><td><a style="cursor:pointer" onclick="D.menu.splice(${i},1);save()">✕</a></td></tr>`).join('')}</table></div>`:''}`:''}`}
@@ -243,37 +250,59 @@ async function doSetup(ev){ev.preventDefault();const id=v('si');if(!/^[A-Za-z0-9
 async function myPin(){const p=prompt('Nouveau PIN (4 caractères minimum)');if(!p||p.length<4)return;try{await FBX.setPin(p);alert('PIN modifié.')}catch(x){alert('Déconnecte-toi, reconnecte-toi, puis réessaie.')}}
 function addPatrol(ev,k){ev.preventDefault();const crew=[...document.querySelectorAll('.pm:checked')].map(c=>c.value);
  if(!crew.length)return alert('Sélectionne au moins un membre d’effectif.');
- D.patrols.push({id:uid(),f:k,c:v('pc'),veh:v('pv'),crew,n:v('pn'),st:'En service',t:Date.now(),by:U.id});save()}
-function tgl(id){const p=D.patrols.find(x=>x.id==id);p.st=p.st=='En service'?'Terminée':'En service';save()}
+ D.patrols.push({id:uid(),f:k,c:v('pc'),veh:v('pv'),crew,n:v('pn'),st:'En service',t:Date.now(),by:U.id});jlog('Fiche de patrouille « '+v('pc')+' » créée ('+F[k].s+')');save()}
+function tgl(id){const p=D.patrols.find(x=>x.id==id);p.st=p.st=='En service'?'Terminée':'En service';jlog('Patrouille « '+p.c+' » : '+p.st);save()}
 function addEvent(ev,k){ev.preventDefault();const aw=[...document.querySelectorAll('.ea:checked')].map(c=>c.value),m=v('em'),x={id:uid(),f:k,t:v('et'),d:v('ed'),m,aw};
- D.events.push(x);save()}
-function addMedal(ev,k){ev.preventDefault();const fl=$('mdi').files[0],fin=img=>{D.medals.push({id:uid(),f:k,name:v('mdn'),desc:v('mdd'),img:img||''});save()};
+ D.events.push(x);jlog('Événement « '+x.t+' » créé ('+F[k].s+')'+(m?' · médaille « '+medName(m)+' » à '+aw.length+' personne(s)':''));save()}
+function addMedal(ev,k){ev.preventDefault();const fl=$('mdi').files[0],fin=img=>{D.medals.push({id:uid(),f:k,name:v('mdn'),desc:v('mdd'),img:img||''});jlog('Médaille « '+v('mdn')+' » créée ('+F[k].s+')');save()};
  if(!fl)return fin('');const im=new Image();im.onload=()=>{const s=Math.min(1,160/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);fin(c.toDataURL('image/png'))};im.src=URL.createObjectURL(fl)}
-function delMedal(id){if(confirm('Supprimer cette médaille ? Elle sera retirée des salariés qui l’ont reçue.')){D.medals=D.medals.filter(m=>m.id!=id);D.events.forEach(x=>{if(x.m==id)x.m=''});save()}}
+function delMedal(id){if(confirm('Supprimer cette médaille ? Elle sera retirée des salariés qui l’ont reçue.')){jlog('Médaille supprimée : « '+medName(id)+' »');D.medals=D.medals.filter(m=>m.id!=id);D.events.forEach(x=>{if(x.m==id)x.m=''});save()}}
+function calHtml(mem){const tot=D.sales.reduce((a,x)=>a+x.a,0),by={};D.sales.forEach(x=>by[x.rep]=(by[x.rep]||0)+x.a);
+ const top=Object.entries(by).sort((a,b)=>b[1]-a[1]);
+ return `<h3 class=st style="margin-top:0">Vente de calendriers 2027</h3>
+ <div class=grid><div class="card f"><span class=mu>Total des dons</span><div class=kpi>${money(tot)}</div></div><div class="card f"><span class=mu>Calendriers remis</span><div class=kpi>${D.sales.length}</div></div></div>
+ <form class="card row" style="margin-top:14px" onsubmit="addSale(event)"><div><label>Représentant BRB</label><input type=hidden id=sr value="${e(U.id)}"><div id=srn style="padding:8px 0"><b>${e(U.name)}</b> <button type=button class="btn g s" onclick="chRep()">Changer</button></div></div>
+ <div><label>Donateur (reçoit le calendrier)</label><input id=sb required></div><div><label>Don ($)</label><input id=sa type=number min=0 step=any required></div><button class=btn>Enregistrer la vente</button></form>
+ <p class=mu style="margin-top:8px">Toutes les ventes alimentent automatiquement une seule ligne « Ventes calendrier 2027 » dans la trésorerie BRB.</p>
+ ${top.length?`<h3 class=st>Par représentant</h3><div class=tw><table><tr><th>Représentant</th><th>Ventes</th><th>Total</th></tr>${top.map(([i,t])=>`<tr><td>${e(nm(i))}</td><td>${D.sales.filter(x=>x.rep==i).length}</td><td>${money(t)}</td></tr>`).join('')}</table></div>`:''}
+ <h3 class=st>Historique</h3><div class=tw><table><tr><th>Date</th><th>Représentant</th><th>Donateur</th><th>Don</th><th></th></tr>
+ ${D.sales.slice().reverse().map(x=>`<tr><td>${x.d}</td><td>${e(nm(x.rep))}</td><td>${e(x.b)}</td><td>${money(x.a)}</td><td><a class=mu style="cursor:pointer" onclick="delSale('${x.id}')">✕</a></td></tr>`).join('')||'<tr><td colspan=5 class=mu>Aucune vente enregistrée.</td></tr>'}</table></div>`}
+function chRep(){const l=D.users.filter(u=>inF(u,'BRB')||u.id==U.id);$('srn').innerHTML=`<select onchange="$('sr').value=this.value">${l.map(u=>`<option value="${e(u.id)}"${u.id==$('sr').value?' selected':''}>${e(u.name)}</option>`).join('')}</select>`}
+function calTx(){const tot=D.sales.reduce((a,x)=>a+x.a,0),i=D.tx.findIndex(t=>t.id=='cal2027');
+ if(!D.sales.length){if(i>=0)D.tx.splice(i,1);return}
+ const l='Ventes calendrier 2027 ('+D.sales.length+' vente'+(D.sales.length>1?'s':'')+')';
+ if(i>=0){D.tx[i].a=tot;D.tx[i].l=l}else D.tx.push({id:'cal2027',f:'BRB',a:tot,l,d:new Date().toLocaleDateString('fr-FR'),by:U.id,t:Date.now()})}
+function addSale(ev){ev.preventDefault();if(!canD('BRB'))return;D.sales.push({id:uid(),rep:v('sr'),b:v('sb'),a:parseFloat(v('sa')),d:new Date().toLocaleDateString('fr-FR'),by:U.id});jlog('Vente calendrier 2027 : '+v('sa')+' $ — représentant '+nm(v('sr'))+', donateur '+v('sb'));calTx();save()}
+function delSale(id){if(confirm('Supprimer cette vente ?')){const x=D.sales.find(y=>y.id==id);jlog('Vente calendrier supprimée : '+(x?x.a+' $ ('+x.b+')':''));D.sales=D.sales.filter(x=>x.id!=id);calTx();save()}}
+function purgeLogs(){const lim=Date.now()-60*864e5;if(confirm('Supprimer les entrées de plus de 60 jours ?')){D.logs=D.logs.filter(l=>l.t>=lim);save()}}
 function addVeh(ev,k){ev.preventDefault();D.veh[k].push(v('vn'));save()}
 function addMenu(ev){ev.preventDefault();D.menu.push({n:v('mn'),p:v('mf')=='1'?null:parseFloat(v('mp')),c:v('mc')});save()}
-function addNews(ev){ev.preventDefault();D.news.push({id:uid(),t:v('nt'),x:v('nx'),d:new Date().toLocaleDateString('fr-FR'),by:U.id});save()}
+function addNews(ev){ev.preventDefault();D.news.push({id:uid(),t:v('nt'),x:v('nx'),d:new Date().toLocaleDateString('fr-FR'),by:U.id});jlog('Annonce publiée : « '+v('nt')+' »');save()}
 function addTx(ev){ev.preventDefault();const f=v('xf');if(!canD(f))return;
- D.tx.push({id:uid(),f,a:parseFloat(v('xa'))*parseInt(v('xs')),l:v('xl'),d:new Date().toLocaleDateString('fr-FR'),by:U.id,t:Date.now()});save()}
+ D.tx.push({id:uid(),f,a:parseFloat(v('xa'))*parseInt(v('xs')),l:v('xl'),d:new Date().toLocaleDateString('fr-FR'),by:U.id,t:Date.now()});jlog('Trésorerie '+F[f].s+' : '+(parseFloat(v('xa'))*parseInt(v('xs')))+' $ — '+v('xl'));save()}
 const genId=n=>{const p=n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z\s-]/g,'').trim().split(/\s+/);return p[0]?p[0][0].toUpperCase()+(p.length>1?'.'+p.slice(1).join(''):''):''};
 const roleOpts=()=>[['president','Président'],['vp','Vice-Président'],...Object.keys(F).map(k=>['dir:'+k,'Directeur '+F[k].s]),['salarie','Salarié']];
 const roleKey=u=>u.role=='directeur'?'dir:'+((u.dirs||[])[0]||''):u.role;
 function applyRole(u,key){if(key.startsWith('dir:')){u.role='directeur';u.dirs=[key.slice(4)]}else{u.role=key;u.dirs=[]}}
 async function saveUser(ev){ev.preventDefault();const fs=[...document.querySelectorAll('.fc:checked')].map(c=>c.value);
  if(editU){const u=usr(editU),self=U&&u.id==U.id;u.name=v('un');u.grade=v('ug')||'Salarié';
-  if(!self){applyRole(u,v('ur'));u.admin=$('ua').checked}
-  u.fs=fs;(u.dirs||[]).forEach(k=>{if(!u.fs.includes(k))u.fs.push(k)});editU=null;return save()}
+  applyRole(u,v('ur'));if(!self)u.admin=$('ua').checked
+  u.fs=fs;(u.dirs||[]).forEach(k=>{if(!u.fs.includes(k))u.fs.push(k)});editU=null;jlog('Compte modifié : '+u.name);return save()}
  const id=v('ui');if(D.users.some(x=>x.id.toLowerCase()==id.toLowerCase()))return alert('Cet identifiant existe déjà.');
  if(!/^[A-Za-z0-9._-]+$/.test(id))return alert('Identifiant : lettres, chiffres, point et tiret uniquement.');
  const u={id,name:v('un'),role:'salarie',dirs:[],fs,admin:$('ua').checked,grade:v('ug')||'Salarié'};applyRole(u,v('ur'));u.dirs.forEach(k=>{if(!u.fs.includes(k))u.fs.push(k)});
  if(FB_ON){if(v('up').length<4)return alert('PIN : 4 caractères minimum.');
-  try{await FBX.createAccount(id,v('up'))}catch(x){return alert(x.code=='auth/email-already-in-use'?'Ce compte existe déjà dans Firebase (ancien compte supprimé ?). Choisis un autre identifiant.':'Création impossible : '+(x.code||x.message))}}
+  try{const g=await FBX.createAccount(id,v('up'));if(g)u.g=g}catch(x){return alert(x.code=='auth/email-already-in-use'?'Ce compte existe déjà dans Firebase (ancien compte supprimé ?). Choisis un autre identifiant.':'Création impossible : '+(x.code||x.message))}}
  else u.pin=v('up');
- D.users.push(u);save()}
+ D.users.push(u);jlog('Compte créé : '+u.name+' ('+u.id+')');save()}
+async function resetPin(id){const u=usr(id);if(!u||!confirm('Générer un nouveau PIN pour '+u.name+' ? L’ancien ne fonctionnera plus.'))return;
+ const pin=String(Math.floor(1000+Math.random()*9000));
+ if(FB_ON){try{const g=await FBX.createAccount(u.id,pin);u.g=g||undefined}catch(x){return alert('Échec : '+(x.code||x.message))}}else u.pin=pin;
+ jlog('Nouveau PIN généré pour '+u.name);save();prompt('Nouveau PIN de '+u.name+' — copie-le et transmets-le :',pin)}
 function chPin(id){const p=prompt('Nouveau PIN pour '+id);if(p){usr(id).pin=p;save()}}
-function delUser(id){if(confirm('Supprimer le compte '+id+' ?')){D.users=D.users.filter(u=>u.id!=id);save()}}
+function delUser(id){if(confirm('Supprimer le compte '+id+' ?')){jlog('Compte supprimé : '+nm(id)+' ('+id+')');D.users=D.users.filter(u=>u.id!=id);save()}}
 function setLogo(k,inp){const fl=inp.files[0];if(!fl)return;const im=new Image();im.onload=()=>{const s=Math.min(1,(k=='banner'?1000:256)/Math.max(im.width,im.height)),c=document.createElement('canvas');
- c.width=im.width*s;c.height=im.height*s;c.getContext('2d').drawImage(im,0,0,c.width,c.height);D.logos[k]=c.toDataURL('image/png');save()};im.src=URL.createObjectURL(fl)}
+ c.width=im.width*s;c.height=im.height*s;c.getContext('2d').drawImage(im,0,0,c.width,c.height);D.logos[k]=c.toDataURL('image/png');jlog('Logo modifié : '+k);save()};im.src=URL.createObjectURL(fl)}
 function exportJ(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(D)],{type:'application/json'}));a.download='prestige-sauvegarde-'+today()+'.json';a.click()}
 function importJ(inp){const r=new FileReader();r.onload=()=>{try{D=JSON.parse(r.result);save()}catch(x){alert('Fichier invalide.')}};r.readAsText(inp.files[0])}
 
@@ -283,14 +312,14 @@ const BASE={id:'base',name:'Vice City',img:'map.jpg',r:1},MAPS=()=>[BASE,...D.ma
 function mapFit(){const v=$('mv'),H=mapH();mS=Math.min(v.clientWidth/2000,v.clientHeight/H);mX=(v.clientWidth-2000*mS)/2;mY=(v.clientHeight-H*mS)/2;mApply()}
 function addMap(ev){ev.preventDefault();const fl=$('mfl').files[0],nm=v('mnm'),url=v('mur');
  if(!fl&&!url)return alert('Choisis une image ou indique son chemin.');
- const fin=(img,q)=>{D.maps.push({id:uid(),name:nm,img,r:+q.toFixed(4),by:U.id});curMap=D.maps[D.maps.length-1].id;mKeep=false;save()},im=new Image();
+ const fin=(img,q)=>{D.maps.push({id:uid(),name:nm,img,r:+q.toFixed(4),by:U.id});jlog('Carte ajoutée : '+nm);curMap=D.maps[D.maps.length-1].id;mKeep=false;save()},im=new Image();
  if(url){im.onload=()=>fin(url,im.naturalHeight/im.naturalWidth);im.onerror=()=>alert('Image introuvable : vérifie le chemin ou le nom du fichier.');im.src=url;return}
  im.onload=()=>{const s=Math.min(1,2600/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);
   const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);
   let q=.88,d=c.toDataURL('image/jpeg',q);while(d.length>880000&&q>.3){q-=.08;d=c.toDataURL('image/jpeg',q)}
   if(d.length>950000)return alert('Image trop lourde pour l’import direct : utilise le chemin d’un fichier dans ton GitHub.');
   fin(d,c.height/c.width)};im.src=URL.createObjectURL(fl)}
-function delMap(id){if(confirm('Supprimer cette carte et les événements posés dessus ?')){D.maps=D.maps.filter(m=>m.id!=id);D.events=D.events.filter(x=>x.mp!=id);curMap='base';mKeep=false;save()}}
+function delMap(id){if(confirm('Supprimer cette carte et les événements posés dessus ?')){jlog('Carte supprimée : '+gm().name);D.maps=D.maps.filter(m=>m.id!=id);D.events=D.events.filter(x=>x.mp!=id);curMap='base';mKeep=false;save()}}
 function mApply(){const w=$('mw');w.style.transform=`translate(${mX}px,${mY}px) scale(${mS})`;w.style.setProperty('--k',Math.min(1,.6/mS*.5+.2))}
 function info(id){const x=D.events.find(y=>y.id==id);if(!x||moved>6)return;
  $('inf').innerHTML=`<h4>${e(x.t)}</h4><small>${F[x.f].n} · ${x.d}</small>${x.m?`<span>🏅 ${e(medName(x.m))}</span>`:''}${x.aw?.length?`<span>${x.aw.map(i=>e(nm(i))).join(', ')}</span>`:''}
@@ -304,7 +333,7 @@ function mapInit(){const v=$('mv');let drag=null,pts={},pd=0;mKeep?mApply():(map
   if(ids.length==2){const o=pts[ids.find(i=>i!=ev.pointerId)],d=Math.hypot(ev.clientX-o.clientX,ev.clientY-o.clientY);if(pd)zoom((ev.clientX+o.clientX)/2,(ev.clientY+o.clientY)/2,d/pd);pd=d;pts[ev.pointerId]=ev;moved=99;return}
   pts[ev.pointerId]=ev;mX+=ev.clientX-drag.x;mY+=ev.clientY-drag.y;moved+=Math.abs(ev.clientX-drag.x)+Math.abs(ev.clientY-drag.y);drag={x:ev.clientX,y:ev.clientY};mApply()};
  v.onpointerup=ev=>{delete pts[ev.pointerId];pd=0;if(moved<6&&placing&&!ev.target.closest('.mk')){const r=v.getBoundingClientRect(),x=(ev.clientX-r.left-mX)/mS/20,y=(ev.clientY-r.top-mY)/mS/(mapH()/100);
-  const t=prompt('Titre de l’événement ?');if(t){const f=canD('BRB')?'BRB':(U.dirs||[])[0]||'BRB';D.events.push({id:uid(),f,t,d:today(),m:'',aw:[],mp:curMap,x:+x.toFixed(2),y:+y.toFixed(2)})}placing=false;save()}}}
+  const t=prompt('Titre de l’événement ?');if(t){const f=canD('BRB')?'BRB':(U.dirs||[])[0]||'BRB';D.events.push({id:uid(),f,t,d:today(),m:'',aw:[],mp:curMap,x:+x.toFixed(2),y:+y.toFixed(2)});jlog('Événement « '+t+' » posé sur la carte')}placing=false;save()}}}
 render();
 </script>
 
@@ -314,8 +343,8 @@ if(C){
 const B='https://www.gstatic.com/firebasejs/10.12.2/';
 const {initializeApp}=await import(B+'firebase-app.js'),A=await import(B+'firebase-auth.js'),S=await import(B+'firebase-firestore.js');
 const app=initializeApp(C),auth=A.getAuth(app),db=S.getFirestore(app);
-const COLS=['users','patrols','events','tx','news','maps','medals'],em=id=>id.toLowerCase()+'@prestige-compagnie.com',pw=p=>p+'#Prestige';
-const key=(c,x)=>c=='users'?x.id.toLowerCase():x.id;
+const COLS=['users','patrols','events','tx','news','maps','medals','sales','logs'],em=id=>id.toLowerCase()+'@prestige-compagnie.com',pw=p=>p+'#Prestige';
+const key=(c,x)=>c=='users'?uk(x):x.id;
 let snap={},unsubs=[],loaded={},ready=false,cfgJ='',settingUp=false,sec=null;
 const fail=x=>{console.warn(x);alert('Action refusée par le serveur ('+(x.code||'erreur')+').')};
 const cfgOf=()=>JSON.stringify({veh:D.veh,menu:D.menu,logos:D.logos});
@@ -325,7 +354,7 @@ S.onSnapshot(S.doc(db,'cfg','main'),d=>{const x=d.data();if(x){D.veh={BRB:[],RD:
 try{SETUP=!(await S.getDoc(S.doc(db,'meta','init'))).exists()}catch(x){}
 
 function listen(u){unsubs.forEach(f=>f());unsubs=[];loaded={};ready=false;AUTHID=u.email.split('@')[0];
- const done=c=>{loaded[c]=1;ready=COLS.every(k=>loaded[k]);if(ready&&!D.users.find(x=>x.id.toLowerCase()==AUTHID))A.signOut(auth)};
+ const done=c=>{loaded[c]=1;ready=COLS.every(k=>loaded[k]);if(ready&&!D.users.find(x=>uk(x)==AUTHID))A.signOut(auth)};
  COLS.forEach(c=>unsubs.push(S.onSnapshot(S.collection(db,c),qs=>{snap[c]={};D[c]=qs.docs.map(d=>{const x0=d.data(),x=c=='users'?norm(x0):x0;snap[c][d.id]=JSON.stringify(x);return x});done(c);softRender()},err=>{D[c]=[];snap[c]={};done(c)})))}
 A.onAuthStateChanged(auth,u=>{if(settingUp)return;
  if(!u){unsubs.forEach(f=>f());unsubs=[];ready=false;AUTHID=null;COLS.forEach(c=>D[c]=[]);snap={};render();return}
@@ -340,9 +369,13 @@ function sync(){if(!ready)return;
  const cj=cfgOf();if(cj!==cfgJ){cfgJ=cj;S.setDoc(S.doc(db,'cfg','main'),JSON.parse(cj)).catch(fail)}}
 
 window.FBX={sync,
- login:(id,pin)=>A.signInWithEmailAndPassword(auth,em(id),pw(pin)),
+ login:async(id,pin)=>{const b=id.toLowerCase();let g=0;try{const d=await S.getDoc(S.doc(db,'meta','gens'));g=(d.exists()&&d.data()[b])||0}catch(x){}
+  return A.signInWithEmailAndPassword(auth,em(b+(g?'-'+g:'')),pw(pin))},
  logout:()=>A.signOut(auth),
- async createAccount(id,pin){sec=sec||A.getAuth(initializeApp(C,'sec'));await A.createUserWithEmailAndPassword(sec,em(id),pw(pin));await A.signOut(sec)},
+ async createAccount(id,pin){sec=sec||A.getAuth(initializeApp(C,'sec'));const b=id.toLowerCase(),gd=await S.getDoc(S.doc(db,'meta','gens')),cur=gd.exists()?gd.data()[b]:undefined;
+  let g=cur==null?0:cur+1;
+  for(;;g++){try{await A.createUserWithEmailAndPassword(sec,em(b+(g?'-'+g:'')),pw(pin));await A.signOut(sec);break}catch(x){if(x.code!='auth/email-already-in-use'||g>30)throw x}}
+  if(g)await S.setDoc(S.doc(db,'meta','gens'),{[b]:g},{merge:true});return g},
  setPin:p=>A.updatePassword(auth.currentUser,pw(p)),
  async setup(name,id,pin){settingUp=true;try{
    await A.createUserWithEmailAndPassword(auth,em(id),pw(pin));
