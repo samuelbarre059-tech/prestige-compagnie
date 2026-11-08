@@ -56,7 +56,7 @@ th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--ln);font-s
 textarea{resize:vertical}
 .mats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .mat{background:var(--pn2);border:1px solid var(--ln);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px;align-items:center;text-align:center}
-.mimg{width:72px;height:72px;border-radius:10px;background:#fff;display:grid;place-items:center;font-size:2rem;overflow:hidden}.mimg img{width:100%;height:100%;object-fit:contain}
+.mimg{width:72px;height:72px;border-radius:10px;display:grid;place-items:center;font-size:2rem;overflow:hidden}.mimg img{width:100%;height:100%;object-fit:contain}
 .mact{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
 .tabs{display:flex;gap:4px;flex-wrap:wrap;margin:-6px 0 22px;border-bottom:1px solid var(--ln)}
 .tb{padding:10px 16px;cursor:pointer;color:var(--mu);border-bottom:3px solid transparent;font-weight:500;margin-bottom:-1px}.tb:hover{color:var(--tx)}.tb.on{color:var(--tx);border-bottom-color:var(--ac)}
@@ -293,7 +293,7 @@ function toggleOut(i,o){const m=D.menu[i];m.out=o;jlog('Menu : « '+m.n+' » '+(
 /* ===== MATÉRIEL ===== */
 const gl=id=>D.gear.find(g=>g.id==id);
 function readImg(fl,max,cb){const im=new Image();im.onload=()=>{const s=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);
- const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.82))};im.src=URL.createObjectURL(fl)}
+ const g=c.getContext('2d');const tp=/png|webp|gif|svg/.test(fl.type);if(!tp){g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height)}g.drawImage(im,0,0,c.width,c.height);cb(c.toDataURL(tp?'image/png':'image/jpeg',.82))};im.src=URL.createObjectURL(fl)}
 function gearHtml(k,cd){const L=gearL(k);
  return `<h3 class=st style="margin-top:0">Matériel</h3><p class=mu style="margin:-6px 0 14px">Matériel minimum conseillé pour partir en patrouille, à titre indicatif.</p>
  ${cd?`<form class="card row" onsubmit="addGearList(event,'${k}')"><div style="flex:2"><label>Nouvelle liste de matériel</label><input id=gn required placeholder="Ex : Patrouille, Astreinte Enedis, Astreinte GRDF…"></div><button class=btn>Créer la liste</button></form>`:''}
@@ -399,13 +399,15 @@ async function pickImg(kind,tid){const md=modeOf(sysOf(kind)),dir=md=='folder'?d
 function libHtml(key){const L=D.links?.lib?.[key]||[];
  return `<h3 class=st>Bibliothèque d’images (liens Postimages) · ${libLabel(key)}</h3><p class=mu style="margin:-6px 0 14px">Colle les <b>liens directs</b> des images (ils commencent par https://i.postimg.cc/…). Ils seront proposés avec le bouton « Choisir une image ». Une ligne par image : « Nom | lien », ou seulement le lien.</p>
  <form class=card onsubmit="libAdd(event,'${key}')"><textarea id=libtxt rows=3 required placeholder="Nom | https://i.postimg.cc/abc123/image.png"></textarea><div><button class=btn>Ajouter à la bibliothèque</button></div></form>
- <div class=mats style="margin-top:12px">${L.map((x,i)=>`<div class=mat><div class=mimg><img src="${e(x.u)}" alt=""></div><small>${e(x.n)}</small><button class="btn g s" onclick="libDel('${key}',${i})">Retirer</button></div>`).join('')}</div>`}
+ <div class=mats style="margin-top:12px">${L.map((x,i)=>`<div class=mat><div class=mimg><img src="${e(x.u)}" alt=""></div><b style="font-size:.85rem;word-break:break-word">${e(x.n)}</b><div class=mact><button class="btn g s" onclick="libMove('${key}',${i},-1)">◀</button><button class="btn g s" onclick="libMove('${key}',${i},1)">▶</button><button class="btn g s" onclick="libRen('${key}',${i})">Renommer</button><button class="btn g s" onclick="libDel('${key}',${i})">Retirer</button></div></div>`).join('')}</div>`}
 function libAdd(ev,key){ev.preventDefault();D.links=D.links||{};D.links.lib=D.links.lib||{};const L=D.links.lib[key]=D.links.lib[key]||[],bad=[],n0=L.length;
  v('libtxt').split('\n').map(x=>x.trim()).filter(Boolean).forEach(line=>{const p=line.includes('|')?line.split('|').map(x=>x.trim()):['',line],u=p[p.length-1];
   if(!/^https?:\/\//i.test(u)||/^https?:\/\/(www\.)?postimg\.cc\//i.test(u)){bad.push(line);return}
   const n_=(p.length>1&&p[0])||decodeURIComponent(u.split('/').pop().split('?')[0]).replace(/\.[a-z0-9]+$/i,'');if(!L.some(x=>x.u==u))L.push({n:n_,u})});
  if(bad.length)alert('Lien(s) ignoré(s) : utilise le lien direct (https://i.postimg.cc/…), pas le lien de la page postimg.cc.\n\n'+bad.join('\n'));
  if(L.length>n0){jlog('Bibliothèque d’images ('+libLabel(key)+') : '+(L.length-n0)+' image(s) ajoutée(s)');save()}}
+function libRen(key,i){const x=D.links.lib[key][i],n=(prompt('Nouveau nom de l’image',x.n)||'').trim();if(!n||n==x.n)return;jlog('Bibliothèque d’images ('+libLabel(key)+') : « '+x.n+' » renommée « '+n+' »');x.n=n;save()}
+function libMove(key,i,d){mvArr(D.links.lib[key],i,d);save()}
 function libDel(key,i){const x=D.links.lib[key][i];if(confirm('Retirer « '+x.n+' » de la bibliothèque ?')){jlog('Bibliothèque d’images ('+libLabel(key)+') : « '+x.n+' » retirée');D.links.lib[key].splice(i,1);save()}}
 function saveLinks(ev){ev.preventDefault();D.links={...D.links,repo:v('lrp'),...Object.fromEntries(Object.keys(F).map(k=>['gear'+k+'Dir',v('ldg'+k)])),menuDir:v('ldm'),medDir:v('ldd'),mapDir:v('ldc'),mode:{gear:v('modG'),menu:v('modM'),med:v('modD'),map:v('modC')}};jlog('Configuration modifiée (dossiers d’images)');save()}
 const calLinkCard=(key,title,act)=>{const u=D.links?.[key]||'';return `<form class="card" onsubmit="saveCalLink(event,'${key}')"><b>${title}</b><label>Lien</label><input id=cl_${key} value="${e(u)}" placeholder="https://…">
