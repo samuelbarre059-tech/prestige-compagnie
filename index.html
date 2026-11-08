@@ -34,8 +34,8 @@ h2{font-size:2rem}.st{margin:30px 0 14px;font-size:1.25rem}
 .pat{border-left:4px solid var(--ac);margin-bottom:10px}.pat.off{opacity:.55;border-left-color:var(--ln)}
 .kpi{font:800 2rem 'Bricolage Grotesque'}
 label{font-size:.8rem;color:var(--mu);margin-top:4px;display:block}
-input,select{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--ln);border-radius:10px;color:var(--tx);font:inherit}
-input:focus,select:focus,.btn:focus-visible,.nv:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+input,select,textarea{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--ln);border-radius:10px;color:var(--tx);font:inherit}
+input:focus,select:focus,textarea:focus,.btn:focus-visible,.nv:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
 .chk{max-height:170px;overflow:auto;border:1px solid var(--ln);border-radius:10px;padding:6px 10px;background:var(--bg)}
 .chk label{display:flex;gap:8px;align-items:center;color:var(--tx);font-size:.9rem;margin:3px 0}.chk input{width:auto}
 .btn{background:var(--ac);color:#111;border:0;border-radius:10px;padding:10px 16px;font:600 .9rem 'DM Sans';cursor:pointer;margin-top:8px}
@@ -52,6 +52,8 @@ th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--ln);font-s
 .mk{position:absolute;width:44px;height:44px;transform:translate(-50%,-50%) scale(var(--k,1));cursor:pointer;filter:drop-shadow(0 2px 4px #000a)}.mk img{width:100%;height:100%;display:block}
 .mi{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px dashed var(--ln)}.mi:last-child{border:0}.mi b{color:var(--ac);white-space:nowrap}
 .mth{width:48px;height:48px;border-radius:10px;object-fit:cover;flex:none}
+.ar{cursor:pointer;color:var(--mu);padding:2px 4px}.ar:hover{color:var(--tx)}
+textarea{resize:vertical}
 .mats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .mat{background:var(--pn2);border:1px solid var(--ln);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px;align-items:center;text-align:center}
 .mimg{width:72px;height:72px;border-radius:10px;background:#fff;display:grid;place-items:center;font-size:2rem;overflow:hidden}.mimg img{width:100%;height:100%;object-fit:contain}
@@ -77,23 +79,23 @@ const F={
 const R={president:['Président',4],vp:['Vice-Président',3],directeur:['Directeur',2],salarie:['Salarié',1]};
 const IC={home:'🏠',menu:'🍽️',map:'🗺️',adm:'📋',tre:'💰',ges:'⚙️',jnl:'📜'};
 const seed=()=>({users:[{id:'S.Mouveau',name:'Samuel Mouveau',pin:'9999',role:'salarie',admin:true,fs:[],dirs:[],grade:'Administrateur'}],
- patrols:[],events:[],tx:[],news:[],maps:[],medals:[],sales:[],logs:[],gear:[],
- veh:{BRB:['BRB-01 · Van de balisage','BRB-02 · Fourgon'],RD:['RD-01 · Food truck'],PR:['PR-01 · SUV presse']},vl:{BRB:[],RD:[],PR:[]},
+ patrols:[],events:[],tx:[],news:[],maps:[],medals:[],sales:[],logs:[],gear:[],infos:[],infosdir:[],
+ veh:{BRB:['BRB-01 · Van de balisage','BRB-02 · Fourgon'],RD:['RD-01 · Food truck'],PR:['PR-01 · SUV presse']},vl:{BRB:[],RD:[],PR:[]},ord:{BRB:[],RD:[],PR:[]},
  menu:[{n:'Muffin chocolat',p:5,c:'Douceurs'},{n:'Café chaud',p:3,c:'Boissons'}],logos:{}});
 /* Compatibilité anciens comptes : admin/membre/f -> admin(bool)/salarie/fs[] */
 const norm=u=>{u={...u};if(u.role=='admin'){u.admin=true;u.role='salarie'}if(u.role=='membre')u.role='salarie';
  u.fs=u.fs||(u.f?[u.f]:[]);u.dirs=u.dirs||(u.role=='directeur'&&u.f?[u.f]:[]);if(u.role=='directeur')u.dirs.forEach(k=>{if(!u.fs.includes(k))u.fs.push(k)});delete u.f;delete u.medals;return u};
-const load=()=>{let d;try{d=JSON.parse(localStorage.getItem(KEY))}catch(x){}d=d||seed();d.users=d.users.map(norm);d.maps=d.maps||[];d.medals=d.medals||[];d.sales=d.sales||[];d.logs=d.logs||[];d.gear=d.gear||[];d.vl=d.vl||{BRB:[],RD:[],PR:[]};return d};
+const load=()=>{let d;try{d=JSON.parse(localStorage.getItem(KEY))}catch(x){}d=d||seed();d.users=d.users.map(norm);d.maps=d.maps||[];d.medals=d.medals||[];d.sales=d.sales||[];d.logs=d.logs||[];d.gear=d.gear||[];d.infos=d.infos||[];d.infosdir=d.infosdir||[];d.vl=d.vl||{BRB:[],RD:[],PR:[]};d.ord=d.ord||{BRB:[],RD:[],PR:[]};return d};
 const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(D))}catch(x){alert('Stockage plein : réduis la taille des logos.')}};
-const FB_ON=!!window.FIREBASE_CONFIG;let SETUP=false,AUTHID=null,pending=false,mKeep=false,curMap='base',editU=null,FT='pat',jf='',editM=null,editG=null;
-let D=FB_ON?{users:[],patrols:[],events:[],tx:[],news:[],maps:[],medals:[],sales:[],logs:[],gear:[],veh:{BRB:[],RD:[],PR:[]},vl:{BRB:[],RD:[],PR:[]},menu:[],logos:{}}:load(),U=null,P='home',placing=false;
+const FB_ON=!!window.FIREBASE_CONFIG;let SETUP=false,AUTHID=null,pending=false,mKeep=false,curMap='base',editU=null,FT='pat',jf='',editM=null,editG=null,awardFor=null,editI=null;
+let D=FB_ON?{users:[],patrols:[],events:[],tx:[],news:[],maps:[],medals:[],sales:[],logs:[],gear:[],infos:[],infosdir:[],veh:{BRB:[],RD:[],PR:[]},vl:{BRB:[],RD:[],PR:[]},ord:{BRB:[],RD:[],PR:[]},menu:[],logos:{}}:load(),U=null,P='home',placing=false;
 if(!FB_ON)try{U=D.users.find(u=>u.id==sessionStorage.s)||null}catch(x){}
 const save=()=>{FB_ON?window.FBX?.sync():persist();render()};
 /* Rafraîchit sans casser un formulaire en cours de saisie */
 function softRender(){const a=document.activeElement;if(a&&/INPUT|SELECT/.test(a.tagName)&&a.closest('main'))pending=true;else render()}
 document.addEventListener('focusout',()=>{if(pending)setTimeout(()=>{const a=document.activeElement;if(!(a&&/INPUT|SELECT/.test(a.tagName))){pending=false;render()}},1200)});
 const medName=id=>D.medals.find(m=>m.id==id)?.name||id;
-const medImg=m=>m.img?`<img src="${m.img}" alt="" style="width:56px;height:56px;object-fit:contain;flex:none">`:`<span style="font-size:2.2rem">🏅</span>`;
+const medImg=m=>`<div class=mimg>${m.img?`<img src="${m.img}" alt="">`:'🏅'}</div>`;
 const medals=id=>D.events.filter(x=>x.m&&(x.aw||[]).includes(id)).map(x=>{const m=D.medals.find(y=>y.id==x.m)||{};return{n:m.name||x.m,desc:m.desc||'',img:m.img||'',e:x.t,d:x.d}});
 
 /* ===== OUTILS ===== */
@@ -112,7 +114,7 @@ const money=n=>n.toLocaleString('fr-FR')+' $';
 const pr=m=>m.p==null?'Tarif libre':m.p+' $';
 const lu=k=>D.logos[k]||(k=='main'?'img/prestige.png':k=='banner'?'img/banniere.png':F[k].i);
 const lg=k=>`<img src="${lu(k)}" alt="">`;
-const go=p=>{P=p;FT='pat';editM=null;editG=null;placing=false;if(p!='map')mKeep=false;render();scrollTo(0,0)};
+const go=p=>{P=p;FT='pat';editM=null;editG=null;awardFor=null;editI=null;placing=false;if(p!='map')mKeep=false;render();scrollTo(0,0)};
 const del=(a,id)=>{if(confirm('Supprimer cet élément ?')){const x=D[a].find(y=>y.id==id);jlog('Suppression · '+({patrols:'fiche de patrouille',events:'événement',news:'annonce',tx:'opération de trésorerie'}[a]||a)+' « '+(x?.c||x?.t||x?.l||'')+' »');D[a]=D[a].filter(y=>y.id!=id);save()}};
 const jlog=a=>D.logs.push({id:uid(),t:Date.now(),by:U?.id||'?',a});
 const today=()=>new Date().toISOString().slice(0,10);
@@ -144,7 +146,7 @@ home(){
  <div class=grid>${Object.entries(F).map(([k,f])=>`<div class="card f" style="--ac:${f.c}"><div class=lgo>${lg(k)}</div><h3>${f.n}</h3><p class=mu>${f.d}</p>
  ${canV(k)?`<button class=btn onclick="go('${k}')">Ouvrir la page</button>`:k=='RD'?`<button class="btn g" onclick="go('menu')">Voir le menu</button>`:''}</div>`).join('')}</div>
  ${U?`<h3 class=st>Annonces</h3>${D.news.slice().reverse().map(n=>`<div class=card style="margin-bottom:10px"><b>${e(n.t)}</b><span>${e(n.x)}</span><small>${n.d} · ${e(nm(n.by))}</small></div>`).join('')||'<p class=mu>Aucune annonce pour le moment.</p>'}
- <h3 class=st>Mes médailles</h3><div class=grid>${mine.map(m=>`<div class=card style="flex-direction:row;align-items:center;gap:12px">${medImg(m)}<div><b>${e(m.n)}</b><br><small>${e(m.desc)}</small><br><small>${e(m.e)} · ${m.d}</small></div></div>`).join('')||'<p class=mu>Aucune médaille reçue pour l’instant.</p>'}</div>`:''}`},
+ <h3 class=st>Mes médailles</h3><div class=mats style="grid-template-columns:repeat(auto-fill,minmax(190px,1fr))">${mine.map(m=>`<div class=mat>${medImg(m)}<b>${e(m.n)}</b><small>${e(m.desc)}</small><small>${e(m.e)} · ${m.d}</small></div>`).join('')||'<p class=mu>Aucune médaille reçue pour l’instant.</p>'}</div>`:''}`},
 
 menu(){
  const cats=[...new Set(D.menu.map(m=>m.c))];
@@ -220,9 +222,9 @@ ges(){const eu=editU?usr(editU):null,self=!!(eu&&U&&eu.id==U.id),k0=eu?roleKey(e
 Object.keys(F).forEach(k=>PG[k]=()=>fil(k));
 
 function fil(k){
- const f=F[k],cd=canD(k),mem=D.users.filter(u=>inF(u,k)),ps=D.patrols.filter(p=>p.f==k).sort((a,b)=>b.t-a.t),ev=D.events.filter(x=>x.f==k).sort((a,b)=>b.d.localeCompare(a.d));
+ const f=F[k],cd=canD(k),mem=memb(k),ps=D.patrols.filter(p=>p.f==k).sort((a,b)=>b.t-a.t),ev=D.events.filter(x=>x.f==k&&!x.direct).sort((a,b)=>b.d.localeCompare(a.d));
  return `<div class=ph><div class=lgo>${lg(k)}</div><div><h2>${f.n}</h2><p class=mu>${f.d}</p></div></div>
- <div class=tabs>${[['pat','Patrouilles'+(ps.some(p=>p.st=='En service')?' · '+ps.filter(p=>p.st=='En service').length:'')],['eff','Effectif'],['mat','Matériel'],['med','Médailles'],['evt','Événements'],...(cd&&k=='BRB'?[['cal','Calendrier 2027']]:[]),...(cd?[['ges','Gestion']]:[])].map(([t,l])=>`<a class="tb${FT==t?' on':''}" tabindex=0 onclick="FT='${t}';render()">${l}</a>`).join('')}</div>
+ <div class=tabs>${[['pat','Patrouilles'+(ps.some(p=>p.st=='En service')?' · '+ps.filter(p=>p.st=='En service').length:'')],['eff','Effectif'],['mat','Matériel'],['med','Médailles'],['evt','Événements'],['info','Infos'],...(cd?[['infod','Infos direction']]:[]),...(cd&&k=='BRB'?[['cal','Calendrier 2027']]:[]),...(cd?[['ges','Gestion']]:[])].map(([t,l])=>`<a class="tb${FT==t?' on':''}" tabindex=0 onclick="FT='${t}';render()">${l}</a>`).join('')}</div>
  ${FT=='pat'?`<h3 class=st style="margin-top:0">Fiches de patrouille</h3><div class=two>
  <form class=card onsubmit="addPatrol(event,'${k}')"><h4>Nouvelle fiche</h4><label>Indicatif</label><input id=pc required placeholder="Ex : ${f.s.slice(0,3).toUpperCase()}-Alpha 1">
  ${vehSel(k)}
@@ -232,16 +234,15 @@ function fil(k){
  <span>🚗 ${e(p.veh)}${p.ty?` · <span class=pill>${e(p.ty)}</span>`:''}</span><span>👥 ${p.crew.map(i=>e(nm(i))).join(', ')}</span>${p.n?`<span class=mu>${e(p.n)}</span>`:''}
  <small>${new Date(p.t).toLocaleString('fr-FR')} · ${e(nm(p.by))}</small>
  <div><button class="btn g s" onclick="tgl('${p.id}')">${p.st=='En service'?'Terminer':'Reprendre'}</button> ${cd||p.by==U.id?`<button class="btn g s" onclick="del('patrols','${p.id}')">Supprimer</button>`:''}</div></div>`).join('')||'<p class=mu>Aucune fiche. Crée la première depuis le formulaire.</p>'}</div></div>
- `:''}${FT=='eff'?`<h3 class=st style="margin-top:0">Effectif</h3><div class=tw><table><tr><th>Nom</th><th>Rôle</th><th>Grade</th><th>Médailles</th></tr>${mem.map(u=>`<tr><td>${e(u.name)}</td><td>${rl(u)}</td><td>${e(u.grade)}</td><td>${medals(u.id).length?'🏅 '+medals(u.id).length:'—'}</td></tr>`).join('')}</table></div>
- `:''}${FT=='mat'?gearHtml(k,cd):''}${FT=='med'?`<h3 class=st style="margin-top:0">Médailles</h3>${cd?`<form class="card row" onsubmit="addMedal(event,'${k}')"><div><label>Titre</label><input id=mdn required placeholder="Ex : Mérite du balisage"></div><div style="flex:2"><label>Description</label><input id=mdd required></div><div><label>Image (facultatif)</label><input id=mdi type=file accept="image/*"></div><button class=btn>Créer la médaille</button></form>`:''}
- <div class=grid style="margin-top:12px">${D.medals.filter(m=>m.f==k).map(m=>`<div class=card style="flex-direction:row;align-items:center;gap:12px">${medImg(m)}<div><b>${e(m.name)}</b><br><small>${e(m.desc)}</small>${cd?`<br><a class=mu style="cursor:pointer" onclick="delMedal('${m.id}')">Supprimer</a>`:''}</div></div>`).join('')||'<p class=mu>Aucune médaille créée.</p>'}</div>
- `:''}${FT=='evt'?`<h3 class=st style="margin-top:0">Événements et attribution</h3>
- ${cd?`<form class=card onsubmit="addEvent(event,'${k}')"><div class=row style="display:flex;gap:10px"><div style="flex:2"><label>Événement</label><input id=et required></div><div><label>Date</label><input id=ed type=date value="${today()}" required></div><div><label>Médaille décernée</label><select id=em><option value="">Aucune</option>${D.medals.filter(m=>m.f==k).map(m=>`<option value="${m.id}">${e(m.name)}</option>`).join('')}</select></div></div>
+ `:''}${FT=='eff'?`<h3 class=st style="margin-top:0">Effectif</h3><div class=tw><table><tr><th>Nom</th><th>Rôle</th><th>Grade</th><th>Médailles</th>${cd?'<th>Ordre</th>':''}</tr>${mem.map(u=>`<tr><td>${e(u.name)}</td><td>${rl(u)}</td><td>${e(u.grade)}</td><td>${medals(u.id).length?'🏅 '+medals(u.id).length:'—'}</td>${cd?`<td style="white-space:nowrap">${arr(d=>`moveMember('${k}','${u.id}',${d})`)}</td>`:''}</tr>`).join('')}</table></div>
+ `:''}${FT=='mat'?gearHtml(k,cd):''}${FT=='med'?`<h3 class=st style="margin-top:0">Médailles</h3>${cd?`<form class="card row" onsubmit="addMedal(event,'${k}')"><div><label>Titre</label><input id=mdn required placeholder="Ex : Mérite du balisage"></div><div style="flex:2"><label>Description</label><input id=mdd required></div><div><label>Image (facultatif)</label><input id=mdi type=file accept="image/*"></div><div><label>…ou chemin</label><input id=mdu placeholder="medailles/merite.png"></div><button class=btn>Créer la médaille</button></form>`:''}
+ ${medalsHtml(k,cd)}`:''}${FT=='evt'?`<h3 class=st style="margin-top:0">Événements et attribution</h3>
+ ${cd?`<form class=card onsubmit="addEvent(event,'${k}')"><div class=row style="display:flex;gap:10px"><div style="flex:2"><label>Événement</label><input id=et required></div><div><label>Date</label><input id=ed type=date value="${today()}" required></div><div><label>Médaille décernée</label><select id=em><option value="">Aucune</option>${medL(k).map(m=>`<option value="${m.id}">${e(m.name)}</option>`).join('')}</select></div></div>
  <label>Récompensés</label><div class=chk>${mem.map(u=>`<label><input type=checkbox class=ea value="${u.id}">${e(u.name)}</label>`).join('')}</div><button class=btn>Créer l’événement</button>${k=='BRB'?'<small>Pour le placer sur la carte, utilise « Poser un événement » dans Carte interactive.</small>':''}</form>`:''}
  ${ev.map(x=>`<div class="card" style="margin-top:10px"><b>${e(x.t)}</b><small>${x.d}${x.m?' · 🏅 '+e(medName(x.m)):''}${x.x!=null?' · 📍 sur la carte':''}</small>${x.aw?.length?`<span>${x.aw.map(i=>e(nm(i))).join(', ')}</span>`:''}${cd?`<div><button class="btn g s" onclick="del('events','${x.id}')">Supprimer</button></div>`:''}</div>`).join('')||'<p class=mu style="margin-top:10px">Aucun événement.</p>'}
- `:''}${FT=='cal'&&k=='BRB'&&cd?calHtml(mem):''}${FT=='ges'&&cd?`${vehHtml(k)}
- ${k=='RD'&&cd?`<h3 class=st>Menu</h3>${menuForm()}
- <div class=tw><table><tr><th>Produit</th><th>Catégorie</th><th>Prix</th><th>Rupture de stock</th><th></th></tr>${D.menu.map((m,i)=>`<tr><td>${m.img?`<img class=mth src="${m.img}" alt="" style="width:36px;height:36px;vertical-align:middle;margin-right:8px">`:''}${e(m.n)}</td><td>${e(m.c)}</td><td>${pr(m)}</td><td><input type=checkbox style="width:auto" ${m.out?'checked':''} onchange="toggleOut(${i},this.checked)"></td><td><a style="cursor:pointer" onclick="editM=${i};render()">✏️</a> <a style="cursor:pointer" onclick="delMenu(${i})">✕</a></td></tr>`).join('')}</table></div>`:''}`:''}`}
+ `:''}${FT=='info'?infoHtml(k,cd,'all'):''}${FT=='infod'&&cd?infoHtml(k,cd,'dir'):''}${FT=='cal'&&k=='BRB'&&cd?calHtml(mem):''}${FT=='ges'&&cd?`${vehHtml(k)}
+ ${k=='RD'&&cd?`<h3 class=st>Menu</h3>${menuForm()}${catOrder()}
+ <div class=tw><table><tr><th>Produit</th><th>Catégorie</th><th>Prix</th><th>Rupture de stock</th><th></th></tr>${D.menu.map((m,i)=>`<tr><td>${m.img?`<img class=mth src="${m.img}" alt="" style="width:36px;height:36px;vertical-align:middle;margin-right:8px">`:''}${e(m.n)}</td><td>${e(m.c)}</td><td>${pr(m)}</td><td><input type=checkbox style="width:auto" ${m.out?'checked':''} onchange="toggleOut(${i},this.checked)"></td><td style="white-space:nowrap">${arr(d=>`moveMenu(${i},${d})`)} <a style="cursor:pointer" onclick="editM=${i};render()">✏️</a> <a style="cursor:pointer" onclick="delMenu(${i})">✕</a></td></tr>`).join('')}</table></div>`:''}`:''}`}
 
 /* ===== ACTIONS ===== */
 async function doLogin(ev){ev.preventDefault();
@@ -259,7 +260,7 @@ function tgl(id){const p=D.patrols.find(x=>x.id==id);p.st=p.st=='En service'?'Te
 function addEvent(ev,k){ev.preventDefault();const aw=[...document.querySelectorAll('.ea:checked')].map(c=>c.value),m=v('em'),x={id:uid(),f:k,t:v('et'),d:v('ed'),m,aw};
  D.events.push(x);jlog('Événement « '+x.t+' » créé ('+F[k].s+')'+(m?' · médaille « '+medName(m)+' » à '+aw.length+' personne(s)':''));save()}
 function addMedal(ev,k){ev.preventDefault();const fl=$('mdi').files[0],fin=img=>{D.medals.push({id:uid(),f:k,name:v('mdn'),desc:v('mdd'),img:img||''});jlog('Médaille « '+v('mdn')+' » créée ('+F[k].s+')');save()};
- if(!fl)return fin('');const im=new Image();im.onload=()=>{const s=Math.min(1,160/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);fin(c.toDataURL('image/png'))};im.src=URL.createObjectURL(fl)}
+ if(!fl)return fin(($('mdu')?.value||'').trim());const im=new Image();im.onload=()=>{const s=Math.min(1,160/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);fin(c.toDataURL('image/png'))};im.src=URL.createObjectURL(fl)}
 function delMedal(id){if(confirm('Supprimer cette médaille ? Elle sera retirée des salariés qui l’ont reçue.')){jlog('Médaille supprimée : « '+medName(id)+' »');D.medals=D.medals.filter(m=>m.id!=id);D.events.forEach(x=>{if(x.m==id)x.m=''});save()}}
 function calHtml(mem){const tot=D.sales.reduce((a,x)=>a+x.a,0),by={};D.sales.forEach(x=>by[x.rep]=(by[x.rep]||0)+x.a);
  const top=Object.entries(by).sort((a,b)=>b[1]-a[1]);
@@ -284,25 +285,40 @@ function toggleOut(i,o){const m=D.menu[i];m.out=o;jlog('Menu : « '+m.n+' » '+(
 const gl=id=>D.gear.find(g=>g.id==id);
 function readImg(fl,max,cb){const im=new Image();im.onload=()=>{const s=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);
  const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.82))};im.src=URL.createObjectURL(fl)}
-function gearHtml(k,cd){const L=D.gear.filter(g=>g.f==k);
+function gearHtml(k,cd){const L=gearL(k);
  return `<h3 class=st style="margin-top:0">Matériel</h3><p class=mu style="margin:-6px 0 14px">Matériel minimum conseillé pour partir en patrouille, à titre indicatif.</p>
  ${cd?`<form class="card row" onsubmit="addGearList(event,'${k}')"><div style="flex:2"><label>Nouvelle liste de matériel</label><input id=gn required placeholder="Ex : Patrouille, Astreinte Enedis, Astreinte GRDF…"></div><button class=btn>Créer la liste</button></form>`:''}
  <div style="display:flex;flex-direction:column;gap:16px;margin-top:14px">${L.map(g=>`<div class="card f"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><h3>${e(g.name)}</h3>
-  ${cd?`<span><button class="btn g s" onclick="renGear('${g.id}')">Renommer</button> <button class="btn g s" onclick="delGear('${g.id}')">Supprimer</button></span>`:''}</div>
+  ${cd?`<span>${arr(d=>`moveGear('${g.id}',${d})`)} <button class="btn g s" onclick="renGear('${g.id}')">Renommer</button> <button class="btn g s" onclick="delGear('${g.id}')">Supprimer</button></span>`:''}</div>
   <div class=mats>${g.items.map(it=>cd&&editG==g.id+':'+it.id?
-   `<form class=mat style="align-items:stretch;text-align:left" onsubmit="saveItem(event,'${g.id}','${it.id}')"><input id=en value="${e(it.n)}" required><input id=eq type=number min=0 value="${it.q}"><input id=ei type=file accept="image/*"><div><button class="btn s">OK</button> <button type=button class="btn g s" onclick="editG=null;render()">Annuler</button></div></form>`:
+   `<form class=mat style="align-items:stretch;text-align:left" onsubmit="saveItem(event,'${g.id}','${it.id}')"><input id=en value="${e(it.n)}" required><input id=eq type=number min=0 value="${it.q}"><input id=ei type=file accept="image/*"><input id=eu placeholder="ou chemin de l’image"><div><button class="btn s">OK</button> <button type=button class="btn g s" onclick="editG=null;render()">Annuler</button></div></form>`:
    `<div class=mat><div class=mimg>${it.img?`<img src="${it.img}" alt="">`:'📦'}</div><b>${e(it.n)}</b><span class=pill>× ${it.q}</span>
-   ${cd?`<div class=mact><button class="btn g s" onclick="qtyItem('${g.id}','${it.id}',-1)">−</button><button class="btn g s" onclick="qtyItem('${g.id}','${it.id}',1)">+</button><button class="btn g s" onclick="editG='${g.id}:${it.id}';render()">✏️</button><button class="btn g s" onclick="delItem('${g.id}','${it.id}')">✕</button></div>`:''}</div>`).join('')||'<p class=mu>Aucun matériel dans cette liste.</p>'}</div>
-  ${cd?`<form onsubmit="addItem(event,'${g.id}')" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-top:6px"><div style="flex:2;min-width:120px"><label>Matériel</label><input id=gm${g.id} required></div><div style="width:80px"><label>Qté</label><input id=gq${g.id} type=number min=0 value=1></div><div style="flex:2;min-width:140px"><label>Image</label><input id=gi${g.id} type=file accept="image/*"></div><button class="btn s" style="margin:0">Ajouter</button></form>`:''}</div>`).join('')||'<p class=mu>Aucune liste de matériel.</p>'}</div>`}
+   ${cd?`<div class=mact><button class="btn g s" onclick="moveItem('${g.id}','${it.id}',-1)">◀</button><button class="btn g s" onclick="moveItem('${g.id}','${it.id}',1)">▶</button><button class="btn g s" onclick="qtyItem('${g.id}','${it.id}',-1)">−</button><button class="btn g s" onclick="qtyItem('${g.id}','${it.id}',1)">+</button><button class="btn g s" onclick="editG='${g.id}:${it.id}';render()">✏️</button><button class="btn g s" onclick="delItem('${g.id}','${it.id}')">✕</button></div>`:''}</div>`).join('')||'<p class=mu>Aucun matériel dans cette liste.</p>'}</div>
+  ${cd?`<form onsubmit="addItem(event,'${g.id}')" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-top:6px"><div style="flex:2;min-width:120px"><label>Matériel</label><input id=gm${g.id} required></div><div style="width:80px"><label>Qté</label><input id=gq${g.id} type=number min=0 value=1></div><div style="flex:2;min-width:140px"><label>Image</label><input id=gi${g.id} type=file accept="image/*"></div><div style="flex:2;min-width:140px"><label>…ou chemin</label><input id=gu${g.id} placeholder="materiel/cone.jpg"></div><button class="btn s" style="margin:0">Ajouter</button></form>`:''}</div>`).join('')||'<p class=mu>Aucune liste de matériel.</p>'}</div>`}
 function addGearList(ev,k){ev.preventDefault();const n=v('gn');D.gear.push({id:uid(),f:k,name:n,items:[]});jlog('Matériel : liste « '+n+' » créée ('+F[k].s+')');save()}
 function renGear(id){const g=gl(id),n=prompt('Nom de la liste',g.name);if(n&&n.trim()){jlog('Matériel : liste « '+g.name+' » renommée « '+n.trim()+' »');g.name=n.trim();save()}}
 function delGear(id){const g=gl(id);if(confirm('Supprimer la liste « '+g.name+' » et tout son matériel ?')){jlog('Matériel : liste « '+g.name+' » supprimée');D.gear=D.gear.filter(x=>x.id!=id);save()}}
 function addItem(ev,lid){ev.preventDefault();const g=gl(lid),n=v('gm'+lid),q=parseInt(v('gq'+lid))||0,fl=$('gi'+lid).files[0],
- mk=img=>{g.items.push({id:uid(),n,q,img:img||''});jlog('Matériel : « '+n+' » ×'+q+' ajouté à « '+g.name+' »');save()};fl?readImg(fl,192,mk):mk('')}
+ mk=img=>{g.items.push({id:uid(),n,q,img:img||''});jlog('Matériel : « '+n+' » ×'+q+' ajouté à « '+g.name+' »');save()};fl?readImg(fl,192,mk):mk(($('gu'+lid)?.value||'').trim())}
 function qtyItem(lid,iid,d){const it=gl(lid).items.find(x=>x.id==iid);it.q=Math.max(0,it.q+d);jlog('Matériel : « '+it.n+' » '+(d>0?'+':'')+d+' → '+it.q);save()}
 function delItem(lid,iid){const g=gl(lid),it=g.items.find(x=>x.id==iid);if(confirm('Supprimer « '+it.n+' » ?')){jlog('Matériel : « '+it.n+' » retiré de « '+g.name+' »');g.items=g.items.filter(x=>x.id!=iid);save()}}
 function saveItem(ev,lid,iid){ev.preventDefault();const g=gl(lid),it=g.items.find(x=>x.id==iid),fl=$('ei').files[0],
- fin=img=>{it.n=v('en');it.q=parseInt(v('eq'))||0;if(img)it.img=img;jlog('Matériel : « '+it.n+' » modifié dans « '+g.name+' »');editG=null;save()};fl?readImg(fl,192,fin):fin('')}
+ fin=img=>{it.n=v('en');it.q=parseInt(v('eq'))||0;if(img)it.img=img;jlog('Matériel : « '+it.n+' » modifié dans « '+g.name+' »');editG=null;save()};fl?readImg(fl,192,fin):fin(($('eu')?.value||'').trim())}
+const arr=f=>`<a class=ar onclick="${f(-1)}">▲</a><a class=ar onclick="${f(1)}">▼</a>`;
+function mvArr(a,i,d,ok=()=>true){let j=i+d;while(j>=0&&j<a.length&&!ok(a[j]))j+=d;if(j<0||j>=a.length)return false;[a[i],a[j]]=[a[j],a[i]];return true}
+const ordc=(a,b)=>(a.o??1e9)-(b.o??1e9)||(a.id<b.id?-1:1);
+function reorder(g,i,d){const j=i+d;if(j<0||j>=g.length)return;[g[i],g[j]]=[g[j],g[i]];g.forEach((x,n)=>x.o=n);save()}
+const gearL=k=>D.gear.filter(g=>g.f==k).sort(ordc),medL=k=>D.medals.filter(m=>m.f==k).sort(ordc);
+const memb=k=>{const o=D.ord?.[k]||[];return D.users.filter(u=>inF(u,k)).sort((a,b)=>{const x=o.indexOf(a.id),y=o.indexOf(b.id);return(x<0?1e9:x)-(y<0?1e9:y)||a.name.localeCompare(b.name)})};
+function moveMember(k,id,d){const o=memb(k).map(u=>u.id),i=o.indexOf(id),j=i+d;if(j<0||j>=o.length)return;[o[i],o[j]]=[o[j],o[i]];D.ord[k]=o;save()}
+function moveMenu(i,d){mvArr(D.menu,i,d,x=>x.c==D.menu[i].c);save()}
+function moveCat(c,d){const cs=[...new Set(D.menu.map(m=>m.c))],i=cs.indexOf(c),j=i+d;if(j<0||j>=cs.length)return;[cs[i],cs[j]]=[cs[j],cs[i]];D.menu=cs.flatMap(x=>D.menu.filter(m=>m.c==x));save()}
+function catOrder(){const cs=[...new Set(D.menu.map(m=>m.c))];if(cs.length<2)return'';return `<div class="card row" style="margin:12px 0;align-items:center"><span class=mu style="flex:none">Ordre des catégories :</span>${cs.map(c=>`<span class=pill>${e(c)} ${arr(d=>`moveCat(${q(c)},${d})`)}</span>`).join('')}</div>`}
+function moveGear(id,d){const g=gl(id),L=gearL(g.f);reorder(L,L.findIndex(x=>x.id==id),d)}
+function moveItem(lid,iid,d){const g=gl(lid);mvArr(g.items,g.items.findIndex(x=>x.id==iid),d);save()}
+function moveMedal(id,d){const m=D.medals.find(x=>x.id==id),L=medL(m.f);reorder(L,L.findIndex(x=>x.id==id),d)}
+function moveVList(k,l,d){mvArr(D.vl[k],D.vl[k].indexOf(l),d);save()}
+function moveVeh(k,i,d){const l=vn(D.veh[k][i]).l;mvArr(D.veh[k],i,d,x=>vn(x).l==l);save()}
 const vn=x=>typeof x=='string'?{n:x,l:''}:x,q=t=>e(JSON.stringify(t));
 function vehSel(k){const V=D.veh[k].map(vn),ls=[...(D.vl[k]||[]),...(V.some(x=>!x.l)?['']:[])],l0=ls[0]??'';
  return `${ls.some(Boolean)?`<label>Type de patrouille</label><select id=pt onchange="fillVeh('${k}')">${ls.map(l=>`<option value="${e(l)}">${e(l||'Général')}</option>`).join('')}</select>`:''}
@@ -311,13 +327,38 @@ function fillVeh(k){const l=$('pt').value;$('pv').innerHTML=D.veh[k].map(vn).fil
 function vehHtml(k){const V=D.veh[k].map(vn),ls=[...(D.vl[k]||[]),...(V.some(x=>!x.l)?['']:[])];
  return `<h3 class=st style="margin-top:0">Véhicules par type de patrouille</h3>
  <form class="card row" onsubmit="addVList(event,'${k}')"><div style="flex:2"><label>Nouvelle liste de véhicules</label><input id=vl required placeholder="Ex : Sanef, Astreinte Enedis, Astreinte GRDF…"></div><button class=btn>Créer la liste</button></form>
- <div style="display:flex;flex-direction:column;gap:16px;margin-top:14px">${ls.map(l=>`<div class="card f"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><h3>${e(l||'Général')}</h3>${l?`<span><button class="btn g s" onclick="renVList('${k}',${q(l)})">Renommer</button> <button class="btn g s" onclick="delVList('${k}',${q(l)})">Supprimer</button></span>`:''}</div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">${V.map((x,i)=>x.l==l?`<span class=pill>${e(x.n)} <a style="cursor:pointer" onclick="delVeh('${k}',${i})">✕</a></span>`:'').join('')||'<span class=mu>Aucun véhicule.</span>'}</div>
+ <div style="display:flex;flex-direction:column;gap:16px;margin-top:14px">${ls.map(l=>`<div class="card f"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><h3>${e(l||'Général')}</h3>${l?`<span>${arr(d=>`moveVList('${k}',${q(l)},${d})`)} <button class="btn g s" onclick="renVList('${k}',${q(l)})">Renommer</button> <button class="btn g s" onclick="delVList('${k}',${q(l)})">Supprimer</button></span>`:''}</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">${V.map((x,i)=>x.l==l?`<span class=pill><a class=ar onclick="moveVeh('${k}',${i},-1)">‹</a>${e(x.n)}<a class=ar onclick="moveVeh('${k}',${i},1)">›</a> <a style="cursor:pointer" onclick="delVeh('${k}',${i})">✕</a></span>`:'').join('')||'<span class=mu>Aucun véhicule.</span>'}</div>
   <form onsubmit="addVeh(event,'${k}',${q(l)})" style="display:flex;gap:8px;margin-top:6px"><input name=n placeholder="Nouveau véhicule" required><button class="btn s" style="margin:0">Ajouter</button></form></div>`).join('')}</div>`}
 function addVList(ev,k){ev.preventDefault();const n=v('vl');D.vl[k]=D.vl[k]||[];if(D.vl[k].includes(n))return alert('Cette liste existe déjà.');D.vl[k].push(n);jlog('Véhicules : liste « '+n+' » créée ('+F[k].s+')');save()}
 function renVList(k,l){const n=(prompt('Nouveau nom de la liste',l)||'').trim();if(!n||n==l||D.vl[k].includes(n))return;
  D.vl[k]=D.vl[k].map(x=>x==l?n:x);D.veh[k]=D.veh[k].map(vn).map(x=>x.l==l?{...x,l:n}:x);jlog('Véhicules : liste « '+l+' » renommée « '+n+' »');save()}
 function delVList(k,l){if(confirm('Supprimer la liste « '+l+' » et ses véhicules ?')){jlog('Véhicules : liste « '+l+' » supprimée ('+F[k].s+')');D.vl[k]=D.vl[k].filter(x=>x!=l);D.veh[k]=D.veh[k].map(vn).filter(x=>x.l!=l);save()}}
+function medalsHtml(k,cd){const aw=awardFor&&D.medals.find(m=>m.id==awardFor),who=id=>[...new Set(D.events.filter(x=>x.m==id).flatMap(x=>x.aw||[]))];
+ return `${aw&&aw.f==k?`<form class=card style="margin:12px 0" onsubmit="saveAward(event,'${aw.id}','${k}')"><h4>Attribuer « ${e(aw.name)} »</h4><label>Personnes récompensées</label><div class=chk>${memb(k).map(u=>`<label><input type=checkbox class=aw value="${e(u.id)}">${e(u.name)}</label>`).join('')}</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap"><div style="flex:2"><label>Motif (facultatif)</label><input id=ar placeholder="Ex : Intervention du 12"></div><div><label>Date</label><input id=ad type=date value="${today()}" required></div></div>
+  <div><button class=btn>Attribuer</button> <button type=button class="btn g" onclick="awardFor=null;render()">Annuler</button></div></form>`:''}
+ <div class=mats style="margin-top:12px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">${medL(k).map(m=>`<div class=mat>${medImg(m)}<b>${e(m.name)}</b><small>${e(m.desc)}</small>
+  ${who(m.id).length?`<small>Décernée à : ${who(m.id).map(i=>e(nm(i))+(cd?` <a class=ar onclick="revoke('${m.id}',${q(i)})">✕</a>`:'')).join(', ')}</small>`:''}
+  ${cd?`<div class=mact><button class="btn s" onclick="awardFor='${m.id}';render()">Attribuer</button>${arr(d=>`moveMedal('${m.id}',${d})`)}<button class="btn g s" onclick="delMedal('${m.id}')">Supprimer</button></div>`:''}</div>`).join('')||'<p class=mu>Aucune médaille créée.</p>'}</div>`}
+function saveAward(ev,mid,k){ev.preventDefault();const aw=[...document.querySelectorAll('.aw:checked')].map(c=>c.value);if(!aw.length)return alert('Sélectionne au moins une personne.');
+ D.events.push({id:uid(),f:k,t:v('ar')||'Attribution directe',d:v('ad'),m:mid,aw,direct:true});jlog('Médaille « '+medName(mid)+' » attribuée à '+aw.map(nm).join(', '));awardFor=null;save()}
+function revoke(mid,u){if(!confirm('Retirer cette médaille à '+nm(u)+' ?'))return;D.events.forEach(x=>{if(x.m==mid&&(x.aw||[]).includes(u))x.aw=x.aw.filter(i=>i!=u)});
+ D.events=D.events.filter(x=>!(x.direct&&!(x.aw||[]).length));jlog('Médaille « '+medName(mid)+' » retirée à '+nm(u));save()}
+/* ===== INFOS ===== */
+const linkify=t=>e(t).replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener" style="color:var(--ac)">$1</a>');
+function infoHtml(k,cd,vis){const K=vis=='dir'?'infosdir':'infos',L=D[K].filter(x=>x.f==k).sort(ordc),ed=editI&&D[K].find(x=>x.id==editI);
+ return `<h3 class=st style="margin-top:0">${vis=='dir'?'Infos direction':'Infos'}</h3><p class=mu style="margin:-6px 0 14px">${vis=='dir'?'Visibles uniquement par la direction.':'Informations diverses sur la filiale, visibles par tous ses membres.'}</p>
+ ${cd?`<form class=card onsubmit="saveInfo(event,'${k}','${vis}')"><label>${ed?'Modifier l’info':'Titre'}</label><input id=it value="${e(ed?.t||'')}" required><label>Contenu</label><textarea id=ix rows=4>${e(ed?.x||'')}</textarea>
+ <div><button class=btn>${ed?'Enregistrer':'Publier'}</button>${ed?` <button type=button class="btn g" onclick="editI=null;render()">Annuler</button>`:''}</div></form>`:''}
+ <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px">${L.map(x=>`<div class="card f"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><h3>${e(x.t)}</h3>
+  ${cd?`<span>${arr(d=>`moveInfo('${K}','${x.id}',${d})`)} <button class="btn g s" onclick="editI='${x.id}';render()">Modifier</button> <button class="btn g s" onclick="delInfo('${K}','${x.id}')">Supprimer</button></span>`:''}</div>
+  <div style="white-space:pre-wrap">${linkify(x.x||'')}</div><small>${x.d} · ${e(nm(x.by))}</small></div>`).join('')||'<p class=mu>Aucune info pour le moment.</p>'}</div>`}
+function saveInfo(ev,k,vis){ev.preventDefault();const K=vis=='dir'?'infosdir':'infos',w=' ('+F[k].s+(vis=='dir'?', direction':'')+')';
+ if(editI){const x=D[K].find(y=>y.id==editI);x.t=v('it');x.x=v('ix');jlog('Info « '+x.t+' » modifiée'+w);editI=null}
+ else{D[K].push({id:uid(),f:k,t:v('it'),x:v('ix'),d:new Date().toLocaleDateString('fr-FR'),by:U.id});jlog('Info « '+v('it')+' » publiée'+w)}save()}
+function delInfo(K,id){const x=D[K].find(y=>y.id==id);if(confirm('Supprimer « '+x.t+' » ?')){jlog('Info « '+x.t+' » supprimée');D[K]=D[K].filter(y=>y.id!=id);save()}}
+function moveInfo(K,id,d){const x=D[K].find(y=>y.id==id),L=D[K].filter(y=>y.f==x.f).sort(ordc);reorder(L,L.findIndex(y=>y.id==id),d)}
 function addVeh(ev,k,l){ev.preventDefault();const n=ev.target.n.value.trim();if(!n)return;D.veh[k].push({n,l:l||''});jlog('Véhicules : « '+n+' » ajouté'+(l?' à « '+l+' »':'')+' ('+F[k].s+')');save()}
 function delVeh(k,i){const x=vn(D.veh[k][i]);if(confirm('Retirer « '+x.n+' » ?')){jlog('Véhicules : « '+x.n+' » retiré ('+F[k].s+')');D.veh[k].splice(i,1);save()}}
 function menuForm(){const m=editM!=null?D.menu[editM]:null,fr=!!m&&m.p==null,cats=[...new Set(D.menu.map(x=>x.c))];
@@ -325,14 +366,14 @@ function menuForm(){const m=editM!=null?D.menu[editM]:null,fr=!!m&&m.p==null,cat
  <div><label>Prix</label><input id=mp type=number step=any value="${m&&!fr?m.p:''}" ${fr?'disabled':'required'}></div>
  <div><label>Tarif libre</label><select id=mf onchange="$('mp').disabled=this.value=='1';$('mp').required=this.value!='1'"><option value=0>Non</option><option value=1${fr?' selected':''}>Oui</option></select></div>
  <div><label>Catégorie</label><input id=mc list=mcats value="${e(m?.c||'Douceurs')}" required><datalist id=mcats>${cats.map(c=>`<option value="${e(c)}">`).join('')}</datalist></div>
- <div><label>Image (carrée)</label><input id=mi type=file accept="image/*">${m?.img?`<label style="display:flex;gap:6px;align-items:center;color:var(--tx)"><input type=checkbox id=mrm style="width:auto">Retirer l’image</label>`:''}</div>
+ <div><label>Image (carrée)</label><input id=mi type=file accept="image/*"><input id=mu placeholder="…ou chemin : menu/cafe.jpg" value="${m?.img&&!m.img.startsWith('data:')?e(m.img):''}" style="margin-top:6px">${m?.img?`<label style="display:flex;gap:6px;align-items:center;color:var(--tx)"><input type=checkbox id=mrm style="width:auto">Retirer l’image</label>`:''}</div>
  <button class=btn>${m?'Enregistrer':'Ajouter'}</button>${m?`<button type=button class="btn g" onclick="editM=null;render()">Annuler</button>`:''}</form>`}
 const cfgSize=()=>JSON.stringify({veh:D.veh,vl:D.vl,menu:D.menu,logos:D.logos}).length;
 function addMenu(ev){ev.preventDefault();const o={n:v('mn'),p:v('mf')=='1'?null:parseFloat(v('mp')),c:v('mc')},fl=$('mi').files[0],rm=$('mrm')?.checked,bak=JSON.stringify(D.menu),
  fin=img=>{if(editM!=null){const m=D.menu[editM];Object.assign(m,o);if(img)m.img=img;else if(rm)delete m.img;jlog('Menu : « '+o.n+' » modifié')}else{if(img)o.img=img;D.menu.push(o);jlog('Menu : « '+o.n+' » ajouté')}
   if(cfgSize()>950000){D.menu=JSON.parse(bak);D.logs.pop();return alert('Limite de stockage atteinte : retire des images du menu avant d’en ajouter.')}
   editM=null;save()};
- fl?readImg(fl,160,fin):fin('')}
+ fl?readImg(fl,160,fin):fin(($('mu')?.value||'').trim())}
 function delMenu(i){const m=D.menu[i];if(confirm('Supprimer « '+m.n+' » du menu ?')){jlog('Menu : « '+m.n+' » supprimé');D.menu.splice(i,1);save()}}
 function addNews(ev){ev.preventDefault();D.news.push({id:uid(),t:v('nt'),x:v('nx'),d:new Date().toLocaleDateString('fr-FR'),by:U.id});jlog('Annonce publiée : « '+v('nt')+' »');save()}
 function addTx(ev){ev.preventDefault();const f=v('xf');if(!canD(f))return;
@@ -400,15 +441,15 @@ if(C){
 const B='https://www.gstatic.com/firebasejs/10.12.2/';
 const {initializeApp}=await import(B+'firebase-app.js'),A=await import(B+'firebase-auth.js'),S=await import(B+'firebase-firestore.js');
 const app=initializeApp(C),auth=A.getAuth(app),db=S.getFirestore(app);
-const COLS=['users','patrols','events','tx','news','maps','medals','sales','logs','gear'],em=id=>id.toLowerCase()+'@prestige-compagnie.com',pw=p=>p+'#Prestige';
+const COLS=['users','patrols','events','tx','news','maps','medals','sales','logs','gear','infos','infosdir'],em=id=>id.toLowerCase()+'@prestige-compagnie.com',pw=p=>p+'#Prestige';
 const key=(c,x)=>c=='users'?uk(x):x.id;
 let snap={},unsubs=[],loaded={},ready=false,cfgJ='',settingUp=false,sec=null;
-let lastFail=0;const W={users:5,patrols:1,events:2,tx:2,news:2,maps:2,medals:2,gear:2,sales:2,logs:1};
+let lastFail=0;const W={users:5,patrols:1,events:2,tx:2,news:2,maps:2,medals:2,gear:2,infos:2,infosdir:2,sales:2,logs:1};
 const fail=(x,c)=>{console.warn(c,x);if(c=='logs'||Date.now()-lastFail<4000)return;lastFail=Date.now();alert('Action refusée par le serveur ('+(x.code||'erreur')+') — collection « '+(c||'?')+' ». Vérifie les règles Firebase ou tes droits.')};
-const cfgOf=()=>JSON.stringify({veh:D.veh,vl:D.vl,menu:D.menu,logos:D.logos});
+const cfgOf=()=>JSON.stringify({veh:D.veh,vl:D.vl,ord:D.ord,menu:D.menu,logos:D.logos});
 
 /* Données publiques : menu, véhicules, logos */
-S.onSnapshot(S.doc(db,'cfg','main'),d=>{const x=d.data();if(x){D.veh={BRB:[],RD:[],PR:[],...(x.veh||{})};D.vl={BRB:[],RD:[],PR:[],...(x.vl||{})};D.menu=x.menu||[];D.logos=x.logos||{};cfgJ=cfgOf()}softRender()},()=>{});
+S.onSnapshot(S.doc(db,'cfg','main'),d=>{const x=d.data();if(x){D.veh={BRB:[],RD:[],PR:[],...(x.veh||{})};D.vl={BRB:[],RD:[],PR:[],...(x.vl||{})};D.ord={BRB:[],RD:[],PR:[],...(x.ord||{})};D.menu=x.menu||[];D.logos=x.logos||{};cfgJ=cfgOf()}softRender()},()=>{});
 try{SETUP=!(await S.getDoc(S.doc(db,'meta','init'))).exists()}catch(x){}
 
 function listen(u){unsubs.forEach(f=>f());unsubs=[];loaded={};ready=false;AUTHID=u.email.split('@')[0];
