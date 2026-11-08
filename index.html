@@ -20,7 +20,7 @@ aside{width:238px;background:var(--pn);border-right:1px solid var(--ln);position
 .sp{flex:1}
 .me{padding:10px;border-top:1px solid var(--ln);margin-top:8px;font-size:.85rem}
 .me b{display:block}
-main{margin-left:238px;flex:1;padding:32px clamp(16px,4vw,48px);min-width:0;max-width:1200px}
+main{margin-left:238px;flex:1;padding:32px clamp(16px,4vw,48px);min-width:0}
 .ph{display:flex;gap:16px;align-items:center;margin-bottom:26px}
 .lgo{width:72px;height:72px;border-radius:50%;display:grid;place-items:center;flex:none}.lgo img{width:100%;height:100%}.ban{background:#fff;border-radius:20px;padding:10px 18px;border-bottom:5px solid var(--rose);max-width:760px;margin-bottom:22px}.ban img{width:100%;display:block}
 h2{font-size:2rem}.st{margin:30px 0 14px;font-size:1.25rem}
@@ -152,7 +152,7 @@ home(){
 menu(){
  const cats=[...new Set(D.menu.map(m=>m.c))];
  return `<div class=ph><div class=lgo>${lg('RD')}</div><div><h2>Menu de la Roue des Délices</h2><p class=mu>L’excellence au pas de votre porte</p></div></div>
- <div class=grid style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr));align-items:start">${cats.map(c=>`<div class="card f" style="--ac:${F.RD.c};gap:2px"><h3 style="margin-bottom:6px">${e(c)}</h3>${D.menu.filter(m=>m.c==c).map(m=>`<div class=mi${m.out?' style="opacity:.55"':''}><span style="display:flex;gap:10px;align-items:center${m.out?';text-decoration:line-through':''}">${m.img?`<img class=mth src="${m.img}" alt="">`:''}${e(m.n)}</span>${m.out?'<span class=pill style="--ac:#f87171">Rupture de stock</span>':`<b>${pr(m)}</b>`}</div>`).join('')}</div>`).join('')||'<p class=mu>Le menu arrive bientôt.</p>'}</div>`},
+ <div class=grid style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));align-items:start">${cats.map(c=>`<div class="card f" style="--ac:${F.RD.c};gap:2px"><h3 style="margin-bottom:6px">${e(c)}</h3>${D.menu.filter(m=>m.c==c).map(m=>`<div class=mi${m.out?' style="opacity:.55"':''}><span style="display:flex;gap:10px;align-items:center${m.out?';text-decoration:line-through':''}">${m.img?`<img class=mth src="${m.img}" alt="">`:''}${e(m.n)}</span>${m.out?'<span class=pill style="--ac:#f87171">Rupture de stock</span>':`<b>${pr(m)}</b>`}</div>`).join('')}</div>`).join('')||'<p class=mu>Le menu arrive bientôt.</p>'}</div>`},
 
 login(){return `<form class="card login" onsubmit="doLogin(event)"><div class=lgo style="width:110px;height:110px;margin:0 auto 6px">${lg('main')}</div><h2>Connexion</h2><p class=mu>Espace réservé aux salariés.</p>
  <label>Identifiant</label><input id=li placeholder="Ex : S.Mouveau" autocomplete=username required>
@@ -172,8 +172,8 @@ map(){const m=gm(),ev=D.events.filter(x=>x.x!=null&&(x.mp||'base')==m.id).sort((
  ${ev.map(x=>`<div class=mk style="left:${x.x}%;top:${x.y}%" title="${e(x.t)}" onpointerup="info('${x.id}')"><img src="${lu(x.f)}" alt=""></div>`).join('')}</div></div>
  <div id=inf class=card><h4>Événements</h4>${ev.map(x=>`<a class=nv style="--ac:${F[x.f].c}" onclick="info('${x.id}')"><img class=ni src="${lu(x.f)}" alt=""> ${e(x.t)}</a>`).join('')||'<p class=mu>Aucun événement sur cette carte.</p>'}</div></div>
  ${dir?`<h3 class=st>Ajouter une carte personnalisée</h3><form class="card row" onsubmit="addMap(event)"><div><label>Nom</label><input id=mnm required placeholder="Ex : Balisage course du 12"></div>
- <div><label>Image à importer (PNG ou JPG)</label><input id=mfl type=file accept="image/*"></div><div style="flex:2"><label>…ou chemin / lien de l’image (qualité maximale)</label><input id=mur placeholder="maps/course.jpg"></div><button class=btn>Ajouter la carte</button></form>
- <p class=mu style="margin-top:8px">Qualité maximale : mets ton image Canva exportée dans un dossier <b>maps</b> de ton GitHub, puis indique son chemin (ex : maps/course.jpg).</p>
+ <div style="flex:2"><label>Image de la carte</label>${imgCtl('map','mur','mfl','','maps/course.jpg')}</div><button class=btn>Ajouter la carte</button></form>
+ ${modeOf('map')=='link'?'<p class=mu style="margin-top:8px">Qualité maximale : mets ton image Canva exportée dans un dossier <b>maps</b> de ton GitHub, puis indique son chemin (ex : maps/course.jpg).</p>':''}
  ${m.id!='base'?`<button class="btn g s" style="margin-top:10px" onclick="delMap('${m.id}')">Supprimer la carte « ${e(m.name)} »</button>`:''}`:''}`},
 
 adm(){
@@ -215,8 +215,12 @@ ges(){const eu=editU?usr(editU):null,self=!!(eu&&U&&eu.id==U.id),k0=eu?roleKey(e
  <div class=tw><table><tr><th>Nom</th><th>ID</th><th>Rôle</th><th>Filiales</th><th>Grade</th><th></th></tr>
  ${D.users.map(u=>`<tr><td>${e(u.name)}</td><td>${e(u.id)}</td><td>${rl(u)}${u.admin?' <span class=pill>Admin</span>':''}</td><td>${(u.fs||[]).map(k=>F[k].s).join(', ')||'—'}</td><td>${e(u.grade)}</td>
  <td><button class="btn g s" onclick="editU='${u.id}';render();scrollTo(0,0)">Modifier</button> ${u.id!=U.id?`<button class="btn g s" onclick="resetPin('${u.id}')">Nouveau PIN</button> `:''}${u.id!=U.id?`<button class="btn g s" onclick="delUser('${u.id}')">Supprimer</button>`:''}</td></tr>`).join('')}</table></div>
- <h3 class=st>Configuration</h3><form class="card row" onsubmit="saveLinks(event)"><div><label>Dépôt GitHub (automatique si vide)</label><input id=lrp value="${e(D.links?.repo||'')}" placeholder="pseudo/nom-du-depot"></div>
- ${Object.keys(F).map(k=>`<div><label>Dossier matériel · ${F[k].s}</label><input id=ldg${k} value="${e(D.links?.['gear'+k+'Dir']||D.links?.gearDir||'')}" placeholder="materiel-${k.toLowerCase()}"></div>`).join('')}<div><label>Dossier images menu</label><input id=ldm value="${e(D.links?.menuDir||'')}" placeholder="menu"></div>
+ <h3 class=st>Configuration</h3><form class="card row" onsubmit="saveLinks(event)">${modeSel('modG','gear','Images du matériel',[['lib','Bibliothèque Postimages'],['folder','Dossier GitHub'],['upload','Import de fichier'],['link','Lien ou chemin manuel']])}
+ ${modeSel('modM','menu','Images du menu',[['lib','Bibliothèque Postimages'],['folder','Dossier GitHub'],['upload','Import de fichier'],['link','Lien ou chemin manuel']])}
+ ${modeSel('modD','med','Images des médailles',[['lib','Bibliothèque Postimages'],['folder','Dossier GitHub'],['upload','Import de fichier'],['link','Lien ou chemin manuel']])}
+ ${modeSel('modC','map','Images des cartes',[['folder','Dossier GitHub'],['upload','Import de fichier'],['link','Lien ou chemin manuel (GitHub)']])}
+ <div style="flex-basis:100%;min-width:100%"><small class=mu>Les dossiers ci-dessous ne servent que si le mode « Dossier GitHub » est choisi.</small></div><div><label>Dépôt GitHub (automatique si vide)</label><input id=lrp value="${e(D.links?.repo||'')}" placeholder="pseudo/nom-du-depot"></div>
+ ${Object.keys(F).map(k=>`<div><label>Dossier matériel · ${F[k].s}</label><input id=ldg${k} value="${e(D.links?.['gear'+k+'Dir']||D.links?.gearDir||'')}" placeholder="materiel-${k.toLowerCase()}"></div>`).join('')}<div><label>Dossier images cartes</label><input id=ldc value="${e(D.links?.mapDir||'')}" placeholder="maps"></div><div><label>Dossier images menu</label><input id=ldm value="${e(D.links?.menuDir||'')}" placeholder="menu"></div>
  <div><label>Dossier images médailles</label><input id=ldd value="${e(D.links?.medDir||'')}" placeholder="medailles"></div><button class=btn>Enregistrer</button></form>
  <h3 class=st>Logos et bandeau</h3><div class=grid>${['banner','main',...Object.keys(F)].map(k=>`<div class=card><b>${k=='main'?'Écusson Prestige':k=='banner'?'Bandeau Prestige (accueil)':F[k].n}</b>
  ${k=='banner'?`<img src="${lg('banner').match(/src="([^"]+)"/)[1]}" alt="" style="width:100%;background:#fff;border-radius:10px;padding:4px">`:`<div class=lgo>${lg(k)}</div>`}
@@ -239,14 +243,14 @@ function fil(k){
  <small>${new Date(p.t).toLocaleString('fr-FR')} · ${e(nm(p.by))}</small>
  <div><button class="btn g s" onclick="tgl('${p.id}')">${p.st=='En service'?'Terminer':'Reprendre'}</button> ${cd||p.by==U.id?`<button class="btn g s" onclick="del('patrols','${p.id}')">Supprimer</button>`:''}</div></div>`).join('')||'<p class=mu>Aucune fiche. Crée la première depuis le formulaire.</p>'}</div></div>
  `:''}${FT=='eff'?`<h3 class=st style="margin-top:0">Effectif</h3><div class=tw><table><tr><th>Nom</th><th>Rôle</th><th>Grade</th><th>Médailles</th>${cd?'<th>Ordre</th>':''}</tr>${mem.map(u=>`<tr><td>${e(u.name)}</td><td>${rl(u)}</td><td>${e(u.grade)}</td><td>${medals(u.id).length?'🏅 '+medals(u.id).length:'—'}</td>${cd?`<td style="white-space:nowrap">${arr(d=>`moveMember('${k}','${u.id}',${d})`)}</td>`:''}</tr>`).join('')}</table></div>
- `:''}${FT=='mat'?gearHtml(k,cd):''}${FT=='med'?`<h3 class=st style="margin-top:0">Médailles</h3>${cd?`<form class="card row" onsubmit="addMedal(event,'${k}')"><div><label>Titre</label><input id=mdn required placeholder="Ex : Mérite du balisage"></div><div style="flex:2"><label>Description</label><input id=mdd required></div><div><label>Image (facultatif)</label><input id=mdi type=file accept="image/*"></div><div><label>…ou chemin</label><input id=mdu placeholder="medailles/merite.png">${pkBtn('med'+k,'mdu')}</div><button class=btn>Créer la médaille</button></form>`:''}
+ `:''}${FT=='mat'?gearHtml(k,cd):''}${FT=='med'?`<h3 class=st style="margin-top:0">Médailles</h3>${cd?`<form class="card row" onsubmit="addMedal(event,'${k}')"><div><label>Titre</label><input id=mdn required placeholder="Ex : Mérite du balisage"></div><div style="flex:2"><label>Description</label><input id=mdd required></div><div><label>Image (facultatif)</label>${imgCtl('med'+k,'mdu','mdi','')}</div><button class=btn>Créer la médaille</button></form>`:''}
  ${medalsHtml(k,cd)}`:''}${FT=='evt'?`<h3 class=st style="margin-top:0">Événements et attribution</h3>
  ${cd?`<form class=card onsubmit="addEvent(event,'${k}')"><div class=row style="display:flex;gap:10px"><div style="flex:2"><label>Événement</label><input id=et required></div><div><label>Date</label><input id=ed type=date value="${today()}" required></div><div><label>Médaille décernée</label><select id=em><option value="">Aucune</option>${medL(k).map(m=>`<option value="${m.id}">${e(m.name)}</option>`).join('')}</select></div></div>
  <label>Récompensés</label><div class=chk>${mem.map(u=>`<label><input type=checkbox class=ea value="${u.id}">${e(u.name)}</label>`).join('')}</div><button class=btn>Créer l’événement</button>${k=='BRB'?'<small>Pour le placer sur la carte, utilise « Poser un événement » dans Carte interactive.</small>':''}</form>`:''}
  ${ev.map(x=>`<div class="card" style="margin-top:10px"><b>${e(x.t)}</b><small>${x.d}${x.m?' · 🏅 '+e(medName(x.m)):''}${x.x!=null?' · 📍 sur la carte':''}</small>${x.aw?.length?`<span>${x.aw.map(i=>e(nm(i))).join(', ')}</span>`:''}${cd?`<div><button class="btn g s" onclick="del('events','${x.id}')">Supprimer</button></div>`:''}</div>`).join('')||'<p class=mu style="margin-top:10px">Aucun événement.</p>'}
  `:''}${FT=='info'?infoHtml(k,cd,'all'):''}${FT=='infod'&&cd?infoHtml(k,cd,'dir'):''}${FT=='cal'&&k=='BRB'&&cd?calHtml(mem):''}${FT=='ges'&&cd?`${vehHtml(k)}
  ${k=='RD'&&cd?`<h3 class=st>Menu</h3>${menuForm()}${catOrder()}
- <div class=tw><table><tr><th>Produit</th><th>Catégorie</th><th>Prix</th><th>Rupture de stock</th><th></th></tr>${D.menu.map((m,i)=>`<tr><td>${m.img?`<img class=mth src="${m.img}" alt="" style="width:36px;height:36px;vertical-align:middle;margin-right:8px">`:''}${e(m.n)}</td><td>${e(m.c)}</td><td>${pr(m)}</td><td><input type=checkbox style="width:auto" ${m.out?'checked':''} onchange="toggleOut(${i},this.checked)"></td><td style="white-space:nowrap">${arr(d=>`moveMenu(${i},${d})`)} <a style="cursor:pointer" onclick="editM=${i};render()">✏️</a> <a style="cursor:pointer" onclick="delMenu(${i})">✕</a></td></tr>`).join('')}</table></div>${libHtml('menu')}`:''}`:''}`}
+ <div class=tw><table><tr><th>Produit</th><th>Catégorie</th><th>Prix</th><th>Rupture de stock</th><th></th></tr>${D.menu.map((m,i)=>`<tr><td>${m.img?`<img class=mth src="${m.img}" alt="" style="width:36px;height:36px;vertical-align:middle;margin-right:8px">`:''}${e(m.n)}</td><td>${e(m.c)}</td><td>${pr(m)}</td><td><input type=checkbox style="width:auto" ${m.out?'checked':''} onchange="toggleOut(${i},this.checked)"></td><td style="white-space:nowrap">${arr(d=>`moveMenu(${i},${d})`)} <a style="cursor:pointer" onclick="editM=${i};render()">✏️</a> <a style="cursor:pointer" onclick="delMenu(${i})">✕</a></td></tr>`).join('')}</table></div>${modeOf('menu')=='lib'?libHtml('menu'):''}`:''}`:''}`}
 
 /* ===== ACTIONS ===== */
 async function doLogin(ev){ev.preventDefault();
@@ -263,7 +267,7 @@ function addPatrol(ev,k){ev.preventDefault();const crew=[...document.querySelect
 function tgl(id){const p=D.patrols.find(x=>x.id==id);p.st=p.st=='En service'?'Terminée':'En service';jlog('Patrouille « '+p.c+' » : '+p.st);save()}
 function addEvent(ev,k){ev.preventDefault();const aw=[...document.querySelectorAll('.ea:checked')].map(c=>c.value),m=v('em'),x={id:uid(),f:k,t:v('et'),d:v('ed'),m,aw:m?aw.filter(i=>!holders(m).includes(i)):aw};
  if(x.aw.length<aw.length)alert('Certaines personnes avaient déjà cette médaille : elles sont ignorées.');D.events.push(x);jlog('Événement « '+x.t+' » créé ('+F[k].s+')'+(m?' · médaille « '+medName(m)+' » à '+aw.length+' personne(s)':''));save()}
-function addMedal(ev,k){ev.preventDefault();const fl=$('mdi').files[0],fin=img=>{D.medals.push({id:uid(),f:k,name:v('mdn'),desc:v('mdd'),img:img||''});jlog('Médaille « '+v('mdn')+' » créée ('+F[k].s+')');save()};
+function addMedal(ev,k){ev.preventDefault();const fl=$('mdi')?.files[0],fin=img=>{D.medals.push({id:uid(),f:k,name:v('mdn'),desc:v('mdd'),img:img||''});jlog('Médaille « '+v('mdn')+' » créée ('+F[k].s+')');save()};
  if(!fl)return fin(($('mdu')?.value||'').trim());const im=new Image();im.onload=()=>{const s=Math.min(1,160/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);fin(c.toDataURL('image/png'))};im.src=URL.createObjectURL(fl)}
 function delMedal(id){if(confirm('Supprimer cette médaille ? Elle sera retirée des salariés qui l’ont reçue.')){jlog('Médaille supprimée : « '+medName(id)+' »');D.medals=D.medals.filter(m=>m.id!=id);D.events.forEach(x=>{if(x.m==id)x.m=''});save()}}
 function calHtml(mem){const tot=D.sales.reduce((a,x)=>a+x.a,0),by={};D.sales.forEach(x=>by[x.rep]=(by[x.rep]||0)+x.a);
@@ -296,18 +300,18 @@ function gearHtml(k,cd){const L=gearL(k);
  <div style="display:flex;flex-direction:column;gap:16px;margin-top:14px">${L.map(g=>`<div class="card f"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><h3>${e(g.name)}</h3>
   ${cd?`<span>${arr(d=>`moveGear('${g.id}',${d})`)} <button class="btn g s" onclick="renGear('${g.id}')">Renommer</button> <button class="btn g s" onclick="delGear('${g.id}')">Supprimer</button></span>`:''}</div>
   <div class=mats>${g.items.map(it=>cd&&editG==g.id+':'+it.id?
-   `<form class=mat style="align-items:stretch;text-align:left" onsubmit="saveItem(event,'${g.id}','${it.id}')"><input id=en value="${e(it.n)}" required><input id=eq type=number min=0 value="${it.q}"><input id=ei type=file accept="image/*"><input id=eu placeholder="ou chemin de l’image">${pkBtn('gear'+k,'eu')}<div><button class="btn s">OK</button> <button type=button class="btn g s" onclick="editG=null;render()">Annuler</button></div></form>`:
+   `<form class=mat style="align-items:stretch;text-align:left" onsubmit="saveItem(event,'${g.id}','${it.id}')"><input id=en value="${e(it.n)}" required><input id=eq type=number min=0 value="${it.q}">${imgCtl('gear'+k,'eu','ei',it.img)}<div><button class="btn s">OK</button> <button type=button class="btn g s" onclick="editG=null;render()">Annuler</button></div></form>`:
    `<div class=mat><div class=mimg>${it.img?`<img src="${it.img}" alt="">`:'📦'}</div><b>${e(it.n)}</b><span class=pill>× ${it.q}</span>
    ${cd?`<div class=mact><button class="btn g s" onclick="moveItem('${g.id}','${it.id}',-1)">◀</button><button class="btn g s" onclick="moveItem('${g.id}','${it.id}',1)">▶</button><button class="btn g s" onclick="qtyItem('${g.id}','${it.id}',-1)">−</button><button class="btn g s" onclick="qtyItem('${g.id}','${it.id}',1)">+</button><button class="btn g s" onclick="editG='${g.id}:${it.id}';render()">✏️</button><button class="btn g s" onclick="delItem('${g.id}','${it.id}')">✕</button></div>`:''}</div>`).join('')||'<p class=mu>Aucun matériel dans cette liste.</p>'}</div>
-  ${cd?`<form onsubmit="addItem(event,'${g.id}')" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-top:6px"><div style="flex:2;min-width:120px"><label>Matériel</label><input id=gm${g.id} required></div><div style="width:80px"><label>Qté</label><input id=gq${g.id} type=number min=0 value=1></div><div style="flex:2;min-width:140px"><label>Image</label><input id=gi${g.id} type=file accept="image/*"></div><div style="flex:2;min-width:140px"><label>…ou chemin</label><input id=gu${g.id} placeholder="materiel/cone.jpg">${pkBtn('gear'+k,'gu'+g.id)}</div><button class="btn s" style="margin:0">Ajouter</button></form>`:''}</div>`).join('')||'<p class=mu>Aucune liste de matériel.</p>'}</div>${cd?libHtml(k):''}`}
+  ${cd?`<form onsubmit="addItem(event,'${g.id}')" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-top:6px"><div style="flex:2;min-width:120px"><label>Matériel</label><input id=gm${g.id} required></div><div style="width:80px"><label>Qté</label><input id=gq${g.id} type=number min=0 value=1></div><div style="flex:2;min-width:180px"><label>Image</label>${imgCtl('gear'+k,'gu'+g.id,'gi'+g.id,'')}</div><button class="btn s" style="margin:0">Ajouter</button></form>`:''}</div>`).join('')||'<p class=mu>Aucune liste de matériel.</p>'}</div>${cd&&modeOf('gear')=='lib'?libHtml(k):''}`}
 function addGearList(ev,k){ev.preventDefault();const n=v('gn');D.gear.push({id:uid(),f:k,name:n,items:[]});jlog('Matériel : liste « '+n+' » créée ('+F[k].s+')');save()}
 function renGear(id){const g=gl(id),n=prompt('Nom de la liste',g.name);if(n&&n.trim()){jlog('Matériel : liste « '+g.name+' » renommée « '+n.trim()+' »');g.name=n.trim();save()}}
 function delGear(id){const g=gl(id);if(confirm('Supprimer la liste « '+g.name+' » et tout son matériel ?')){jlog('Matériel : liste « '+g.name+' » supprimée');D.gear=D.gear.filter(x=>x.id!=id);save()}}
-function addItem(ev,lid){ev.preventDefault();const g=gl(lid),n=v('gm'+lid),q=parseInt(v('gq'+lid))||0,fl=$('gi'+lid).files[0],
+function addItem(ev,lid){ev.preventDefault();const g=gl(lid),n=v('gm'+lid),q=parseInt(v('gq'+lid))||0,fl=$('gi'+lid)?.files[0],
  mk=img=>{g.items.push({id:uid(),n,q,img:img||''});jlog('Matériel : « '+n+' » ×'+q+' ajouté à « '+g.name+' »');save()};fl?readImg(fl,192,mk):mk(($('gu'+lid)?.value||'').trim())}
 function qtyItem(lid,iid,d){const it=gl(lid).items.find(x=>x.id==iid);it.q=Math.max(0,it.q+d);jlog('Matériel : « '+it.n+' » '+(d>0?'+':'')+d+' → '+it.q);save()}
 function delItem(lid,iid){const g=gl(lid),it=g.items.find(x=>x.id==iid);if(confirm('Supprimer « '+it.n+' » ?')){jlog('Matériel : « '+it.n+' » retiré de « '+g.name+' »');g.items=g.items.filter(x=>x.id!=iid);save()}}
-function saveItem(ev,lid,iid){ev.preventDefault();const g=gl(lid),it=g.items.find(x=>x.id==iid),fl=$('ei').files[0],
+function saveItem(ev,lid,iid){ev.preventDefault();const g=gl(lid),it=g.items.find(x=>x.id==iid),fl=$('ei')?.files[0],
  fin=img=>{it.n=v('en');it.q=parseInt(v('eq'))||0;if(img)it.img=img;jlog('Matériel : « '+it.n+' » modifié dans « '+g.name+' »');editG=null;save()};fl?readImg(fl,192,fin):fin(($('eu')?.value||'').trim())}
 const arr=f=>`<a class=ar onclick="${f(-1)}">▲</a><a class=ar onclick="${f(1)}">▼</a>`;
 function mvArr(a,i,d,ok=()=>true){let j=i+d;while(j>=0&&j<a.length&&!ok(a[j]))j+=d;if(j<0||j>=a.length)return false;[a[i],a[j]]=[a[j],a[i]];return true}
@@ -345,7 +349,7 @@ function medalsHtml(k,cd){const aw=awardFor&&D.medals.find(m=>m.id==awardFor),wh
   <div><button class=btn>Enregistrer</button> <button type=button class="btn g" onclick="awardFor=null;render()">Annuler</button></div></form>`:''}
  <div class=mats style="margin-top:12px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">${medL(k).map(m=>`<div class=mat>${medImg(m)}<b>${e(m.name)}</b><small>${e(m.desc)}</small>
   ${who(m.id).length?`<small>Décernée à : ${who(m.id).map(i=>e(nm(i))+(cd?` <a class=ar onclick="revoke('${m.id}',${q(i)})">✕</a>`:'')).join(', ')}</small>`:''}
-  ${cd?`<div class=mact><button class="btn s" onclick="awardFor='${m.id}';render()">Attribuer / retirer</button>${arr(d=>`moveMedal('${m.id}',${d})`)}<button class="btn g s" onclick="delMedal('${m.id}')">Supprimer</button></div>`:''}</div>`).join('')||'<p class=mu>Aucune médaille créée.</p>'}</div>${cd?libHtml('med'+k):''}`}
+  ${cd?`<div class=mact><button class="btn s" onclick="awardFor='${m.id}';render()">Attribuer / retirer</button>${arr(d=>`moveMedal('${m.id}',${d})`)}<button class="btn g s" onclick="delMedal('${m.id}')">Supprimer</button></div>`:''}</div>`).join('')||'<p class=mu>Aucune médaille créée.</p>'}</div>${cd&&modeOf('med')=='lib'?libHtml('med'+k):''}`}
 function saveAward(ev,mid,k){ev.preventDefault();const sel=[...document.querySelectorAll('.aw:checked')].map(c=>c.value),cur=holders(mid),shown=memb(k).map(u=>u.id),
  add=sel.filter(i=>!cur.includes(i)),rem=cur.filter(i=>shown.includes(i)&&!sel.includes(i));
  if(rem.length){D.events.forEach(x=>{if(x.m==mid)x.aw=(x.aw||[]).filter(i=>!rem.includes(i))});D.events=D.events.filter(x=>!(x.direct&&!(x.aw||[]).length));jlog('Médaille « '+medName(mid)+' » retirée à '+rem.map(nm).join(', '))}
@@ -371,9 +375,17 @@ function moveInfo(K,id,d){const x=D[K].find(y=>y.id==id),L=D[K].filter(y=>y.f==x
 const dirOf=kind=>D.links?.[kind+'Dir']||(kind.startsWith('gear')?D.links?.gearDir:kind.startsWith('med')?D.links?.medDir:'')||'';
 const libKey=kind=>kind.startsWith('gear')?kind.slice(4):kind,libLabel=key=>F[key]?'matériel '+F[key].s:key=='menu'?'menu':'médailles '+(F[key.slice(3)]?.s||'');
 const libOf=kind=>D.links?.lib?.[libKey(kind)]||[];
-const pkBtn=(kind,id)=>(dirOf(kind)||libOf(kind).length)?`<button type=button class="btn g s" style="margin-top:6px" onclick="pickImg('${kind}','${id}')">📁 Choisir une image</button>`:'';
+const sysOf=kind=>kind.startsWith('gear')?'gear':kind.startsWith('med')?'med':kind;
+const modeOf=sys=>D.links?.mode?.[sys]||(sys=='map'?'link':'lib');
+function imgCtl(kind,pid,fid,val,ph){const m=modeOf(sysOf(kind));val=val&&!String(val).startsWith('data:')?val:'';
+ if(m=='upload')return `<input id=${fid} type=file accept="image/*">`;
+ if(m=='link')return `<input id=${pid} value="${e(val)}" placeholder="${e(ph||'https://… ou dossier/image.jpg')}">`;
+ return `<input id=${pid} readonly value="${e(val)}" placeholder="Aucune image choisie">${pkBtn(kind,pid)}`}
+const modeSel=(id,sys,lab,opts)=>`<div><label>${lab}</label><select id=${id}>${opts.map(([k,t])=>`<option value=${k}${modeOf(sys)==k?' selected':''}>${t}</option>`).join('')}</select></div>`;
+const pkBtn=(kind,id)=>{const m=modeOf(sysOf(kind)),ok=m=='lib'?libOf(kind).length:dirOf(kind);
+ return ok?`<button type=button class="btn g s" style="margin-top:6px" onclick="pickImg('${kind}','${id}')">📁 Choisir une image</button>`:`<small class=mu>${m=='lib'?'Ajoute d’abord des images à la bibliothèque.':'Définis d’abord le dossier dans Gestion → Configuration.'}</small>`};
 const safeUrl=u=>/^(https?:\/\/|[\w.\/-]+$)/i.test(u||'')?u:'#',IMGC={};
-async function pickImg(kind,tid){const dir=dirOf(kind).replace(/^\/|\/$/g,''),lib=libOf(kind);if(!dir&&!lib.length)return alert('Aucune image proposée : ajoute des liens à la bibliothèque ou définis un dossier (Gestion → Configuration).');
+async function pickImg(kind,tid){const md=modeOf(sysOf(kind)),dir=md=='folder'?dirOf(kind).replace(/^\/|\/$/g,''):'',lib=md=='lib'?libOf(kind):[];if(!dir&&!lib.length)return alert('Aucune image proposée : ajoute des liens à la bibliothèque ou définis un dossier (Gestion → Configuration).');
  const m=location.hostname.match(/^(.+)\.github\.io$/);let repo=((D.links||{}).repo||'').trim();
  if(!repo&&m){const seg=location.pathname.split('/')[1];repo=m[1]+'/'+(seg&&!seg.includes('.')?seg:m[1]+'.github.io')}
  const o=document.createElement('div');o.id='pk';o.style.cssText='position:fixed;inset:0;background:#000b;z-index:50;display:grid;place-items:center;padding:16px';
@@ -395,7 +407,7 @@ function libAdd(ev,key){ev.preventDefault();D.links=D.links||{};D.links.lib=D.li
  if(bad.length)alert('Lien(s) ignoré(s) : utilise le lien direct (https://i.postimg.cc/…), pas le lien de la page postimg.cc.\n\n'+bad.join('\n'));
  if(L.length>n0){jlog('Bibliothèque d’images ('+libLabel(key)+') : '+(L.length-n0)+' image(s) ajoutée(s)');save()}}
 function libDel(key,i){const x=D.links.lib[key][i];if(confirm('Retirer « '+x.n+' » de la bibliothèque ?')){jlog('Bibliothèque d’images ('+libLabel(key)+') : « '+x.n+' » retirée');D.links.lib[key].splice(i,1);save()}}
-function saveLinks(ev){ev.preventDefault();D.links={...D.links,repo:v('lrp'),...Object.fromEntries(Object.keys(F).map(k=>['gear'+k+'Dir',v('ldg'+k)])),menuDir:v('ldm'),medDir:v('ldd')};jlog('Configuration modifiée (dossiers d’images)');save()}
+function saveLinks(ev){ev.preventDefault();D.links={...D.links,repo:v('lrp'),...Object.fromEntries(Object.keys(F).map(k=>['gear'+k+'Dir',v('ldg'+k)])),menuDir:v('ldm'),medDir:v('ldd'),mapDir:v('ldc'),mode:{gear:v('modG'),menu:v('modM'),med:v('modD'),map:v('modC')}};jlog('Configuration modifiée (dossiers d’images)');save()}
 const calLinkCard=(key,title,act)=>{const u=D.links?.[key]||'';return `<form class="card" onsubmit="saveCalLink(event,'${key}')"><b>${title}</b><label>Lien</label><input id=cl_${key} value="${e(u)}" placeholder="https://…">
  <div><button class=btn>Enregistrer</button>${u?` <a class="btn g" style="text-decoration:none" href="${e(safeUrl(u))}" target=_blank rel=noopener>${act}</a> <button type=button class="btn g" onclick="copyCal(this,'${key}')">Copier le lien</button>`:''}</div></form>`};
 function copyCal(b,key){const t=D.links?.[key]||'',done=()=>{b.textContent='Copié ✓';setTimeout(()=>b.textContent='Copier le lien',1500)},
@@ -409,10 +421,10 @@ function menuForm(){const m=editM!=null?D.menu[editM]:null,fr=!!m&&m.p==null,cat
  <div><label>Prix</label><input id=mp type=number step=any value="${m&&!fr?m.p:''}" ${fr?'disabled':'required'}></div>
  <div><label>Tarif libre</label><select id=mf onchange="$('mp').disabled=this.value=='1';$('mp').required=this.value!='1'"><option value=0>Non</option><option value=1${fr?' selected':''}>Oui</option></select></div>
  <div><label>Catégorie</label><input id=mc list=mcats value="${e(m?.c||'Douceurs')}" required><datalist id=mcats>${cats.map(c=>`<option value="${e(c)}">`).join('')}</datalist></div>
- <div><label>Image (carrée)</label><input id=mi type=file accept="image/*"><input id=mu placeholder="…ou chemin : menu/cafe.jpg" value="${m?.img&&!m.img.startsWith('data:')?e(m.img):''}" style="margin-top:6px">${pkBtn('menu','mu')}${m?.img?`<label style="display:flex;gap:6px;align-items:center;color:var(--tx)"><input type=checkbox id=mrm style="width:auto">Retirer l’image</label>`:''}</div>
+ <div><label>Image (carrée)</label>${imgCtl('menu','mu','mi',m?.img)}${m?.img?`<label style="display:flex;gap:6px;align-items:center;color:var(--tx)"><input type=checkbox id=mrm style="width:auto">Retirer l’image</label>`:''}</div>
  <button class=btn>${m?'Enregistrer':'Ajouter'}</button>${m?`<button type=button class="btn g" onclick="editM=null;render()">Annuler</button>`:''}</form>`}
 const cfgSize=()=>JSON.stringify({veh:D.veh,vl:D.vl,menu:D.menu,logos:D.logos}).length;
-function addMenu(ev){ev.preventDefault();const o={n:v('mn'),p:v('mf')=='1'?null:parseFloat(v('mp')),c:v('mc')},fl=$('mi').files[0],rm=$('mrm')?.checked,bak=JSON.stringify(D.menu),
+function addMenu(ev){ev.preventDefault();const o={n:v('mn'),p:v('mf')=='1'?null:parseFloat(v('mp')),c:v('mc')},fl=$('mi')?.files[0],rm=$('mrm')?.checked,bak=JSON.stringify(D.menu),
  fin=img=>{if(editM!=null){const m=D.menu[editM];Object.assign(m,o);if(img)m.img=img;else if(rm)delete m.img;jlog('Menu : « '+o.n+' » modifié')}else{if(img)o.img=img;D.menu.push(o);jlog('Menu : « '+o.n+' » ajouté')}
   if(cfgSize()>950000){D.menu=JSON.parse(bak);D.logs.pop();return alert('Limite de stockage atteinte : retire des images du menu avant d’en ajouter.')}
   editM=null;save()};
@@ -451,7 +463,7 @@ function importJ(inp){const r=new FileReader();r.onload=()=>{try{D=JSON.parse(r.
 let mS=1,mX=0,mY=0;
 const BASE={id:'base',name:'Vice City',img:'map.jpg',r:1},MAPS=()=>[BASE,...D.maps],gm=()=>MAPS().find(m=>m.id==curMap)||BASE,mapH=()=>2000*gm().r;
 function mapFit(){const v=$('mv'),H=mapH();mS=Math.min(v.clientWidth/2000,v.clientHeight/H);mX=(v.clientWidth-2000*mS)/2;mY=(v.clientHeight-H*mS)/2;mApply()}
-function addMap(ev){ev.preventDefault();const fl=$('mfl').files[0],nm=v('mnm'),url=v('mur');
+function addMap(ev){ev.preventDefault();const fl=$('mfl')?.files[0],nm=v('mnm'),url=($('mur')?.value||'').trim();
  if(!fl&&!url)return alert('Choisis une image ou indique son chemin.');
  const fin=(img,q)=>{D.maps.push({id:uid(),name:nm,img,r:+q.toFixed(4),by:U.id});jlog('Carte ajoutée : '+nm);curMap=D.maps[D.maps.length-1].id;mKeep=false;save()},im=new Image();
  if(url){im.onload=()=>fin(url,im.naturalHeight/im.naturalWidth);im.onerror=()=>alert('Image introuvable : vérifie le chemin ou le nom du fichier.');im.src=url;return}
