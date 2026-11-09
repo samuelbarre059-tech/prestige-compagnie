@@ -80,15 +80,15 @@ const R={president:['Président',4],vp:['Vice-Président',3],directeur:['Directe
 const IC={home:'🏠',menu:'🍽️',map:'🗺️',adm:'📋',tre:'💰',ges:'⚙️',jnl:'📜'};
 const seed=()=>({users:[{id:'S.Mouveau',name:'Samuel Mouveau',pin:'9999',role:'salarie',admin:true,fs:[],dirs:[],grade:'Administrateur'}],
  patrols:[],events:[],tx:[],news:[],maps:[],medals:[],sales:[],logs:[],gear:[],infos:[],infosdir:[],
- veh:{BRB:['BRB-01 · Van de balisage','BRB-02 · Fourgon'],RD:['RD-01 · Food truck'],PR:['PR-01 · SUV presse']},vl:{BRB:[],RD:[],PR:[]},ord:{BRB:[],RD:[],PR:[]},links:{},
+ veh:{BRB:['BRB-01 · Van de balisage','BRB-02 · Fourgon'],RD:['RD-01 · Food truck'],PR:['PR-01 · SUV presse']},vl:{BRB:[],RD:[],PR:[]},ord:{BRB:[],RD:[],PR:[]},links:{},vm:{BRB:[],RD:[],PR:[]},
  menu:[{n:'Muffin chocolat',p:5,c:'Douceurs'},{n:'Café chaud',p:3,c:'Boissons'}],logos:{}});
 /* Compatibilité anciens comptes : admin/membre/f -> admin(bool)/salarie/fs[] */
 const norm=u=>{u={...u};if(u.role=='admin'){u.admin=true;u.role='salarie'}if(u.role=='membre')u.role='salarie';
  u.fs=u.fs||(u.f?[u.f]:[]);u.dirs=u.dirs||(u.role=='directeur'&&u.f?[u.f]:[]);if(u.role=='directeur')u.dirs.forEach(k=>{if(!u.fs.includes(k))u.fs.push(k)});delete u.f;delete u.medals;return u};
-const load=()=>{let d;try{d=JSON.parse(localStorage.getItem(KEY))}catch(x){}d=d||seed();d.users=d.users.map(norm);d.maps=d.maps||[];d.medals=d.medals||[];d.sales=d.sales||[];d.logs=d.logs||[];d.gear=d.gear||[];d.infos=d.infos||[];d.infosdir=d.infosdir||[];d.vl=d.vl||{BRB:[],RD:[],PR:[]};d.ord=d.ord||{BRB:[],RD:[],PR:[]};d.links=d.links||{};return d};
+const load=()=>{let d;try{d=JSON.parse(localStorage.getItem(KEY))}catch(x){}d=d||seed();d.users=d.users.map(norm);d.maps=d.maps||[];d.medals=d.medals||[];d.sales=d.sales||[];d.logs=d.logs||[];d.gear=d.gear||[];d.infos=d.infos||[];d.infosdir=d.infosdir||[];d.vl=d.vl||{BRB:[],RD:[],PR:[]};d.ord=d.ord||{BRB:[],RD:[],PR:[]};d.links=d.links||{};d.vm=d.vm||{BRB:[],RD:[],PR:[]};return d};
 const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(D))}catch(x){alert('Stockage plein : réduis la taille des logos.')}};
 const FB_ON=!!window.FIREBASE_CONFIG;let SETUP=false,AUTHID=null,pending=false,mKeep=false,curMap='base',editU=null,FT='pat',jf='',editM=null,editG=null,awardFor=null,editI=null;
-let D=FB_ON?{users:[],patrols:[],events:[],tx:[],news:[],maps:[],medals:[],sales:[],logs:[],gear:[],infos:[],infosdir:[],veh:{BRB:[],RD:[],PR:[]},vl:{BRB:[],RD:[],PR:[]},ord:{BRB:[],RD:[],PR:[]},links:{},menu:[],logos:{}}:load(),U=null,P='home',placing=false;
+let D=FB_ON?{users:[],patrols:[],events:[],tx:[],news:[],maps:[],medals:[],sales:[],logs:[],gear:[],infos:[],infosdir:[],veh:{BRB:[],RD:[],PR:[]},vl:{BRB:[],RD:[],PR:[]},ord:{BRB:[],RD:[],PR:[]},links:{},vm:{BRB:[],RD:[],PR:[]},menu:[],logos:{}}:load(),U=null,P='home',placing=false;
 if(!FB_ON)try{U=D.users.find(u=>u.id==sessionStorage.s)||null}catch(x){}
 const save=()=>{FB_ON?window.FBX?.sync():persist();render()};
 /* Rafraîchit sans casser un formulaire en cours de saisie */
@@ -241,7 +241,7 @@ function fil(k){
  <div>${ps.map(p=>`<div class="card pat${p.st=='En service'?'':' off'}"><div style="display:flex;justify-content:space-between;gap:8px"><h4>${e(p.c)}</h4><span class=pill>${p.st}</span></div>
  <span>🚗 ${e(p.veh)}${p.ty?` · <span class=pill>${e(p.ty)}</span>`:''}</span><span>👥 ${p.crew.map(i=>e(nm(i))).join(', ')}</span>${p.n?`<span class=mu>${e(p.n)}</span>`:''}
  <small>${new Date(p.t).toLocaleString('fr-FR')} · ${e(nm(p.by))}</small>
- <div><button class="btn g s" onclick="tgl('${p.id}')">${p.st=='En service'?'Terminer':'Reprendre'}</button> ${cd||p.by==U.id?`<button class="btn g s" onclick="del('patrols','${p.id}')">Supprimer</button>`:''}</div></div>`).join('')||'<p class=mu>Aucune fiche. Crée la première depuis le formulaire.</p>'}</div></div>
+ <div><button class="btn g s" onclick="tgl('${p.id}')">${p.st=='En service'?'Terminer':'Reprendre'}</button> <button class="btn g s" onclick="copyCrew('${p.id}',this)">Copier l’effectif</button> ${cd||p.by==U.id?`<button class="btn g s" onclick="del('patrols','${p.id}')">Supprimer</button>`:''}</div></div>`).join('')||'<p class=mu>Aucune fiche. Crée la première depuis le formulaire.</p>'}</div></div>
  `:''}${FT=='eff'?`<h3 class=st style="margin-top:0">Effectif</h3><div class=tw><table><tr><th>Nom</th><th>Rôle</th><th>Grade</th><th>Médailles</th>${cd?'<th>Ordre</th>':''}</tr>${mem.map(u=>`<tr><td>${e(u.name)}</td><td>${rl(u)}</td><td>${e(u.grade)}</td><td>${medals(u.id).length?'🏅 '+medals(u.id).length:'—'}</td>${cd?`<td style="white-space:nowrap">${arr(d=>`moveMember('${k}','${u.id}',${d})`)}</td>`:''}</tr>`).join('')}</table></div>
  `:''}${FT=='mat'?gearHtml(k,cd):''}${FT=='med'?`<h3 class=st style="margin-top:0">Médailles</h3>${cd?`<form class="card row" onsubmit="addMedal(event,'${k}')"><div><label>Titre</label><input id=mdn required placeholder="Ex : Mérite du balisage"></div><div style="flex:2"><label>Description</label><input id=mdd required></div><div><label>Image (facultatif)</label>${imgCtl('med'+k,'mdu','mdi','')}</div><button class=btn>Créer la médaille</button></form>`:''}
  ${medalsHtml(k,cd)}`:''}${FT=='evt'?`<h3 class=st style="margin-top:0">Événements et attribution</h3>
@@ -263,7 +263,11 @@ async function doSetup(ev){ev.preventDefault();const id=v('si');if(!/^[A-Za-z0-9
 async function myPin(){const p=prompt('Nouveau PIN (4 caractères minimum)');if(!p||p.length<4)return;try{await FBX.setPin(p);alert('PIN modifié.')}catch(x){alert('Déconnecte-toi, reconnecte-toi, puis réessaie.')}}
 function addPatrol(ev,k){ev.preventDefault();const crew=[...document.querySelectorAll('.pm:checked')].map(c=>c.value);
  if(!crew.length)return alert('Sélectionne au moins un membre d’effectif.');
- D.patrols.push({id:uid(),f:k,c:v('pc'),veh:v('pv'),ty:$('pt')?$('pt').value:'',crew,n:v('pn'),st:'En service',t:Date.now(),by:U.id});jlog('Fiche de patrouille « '+v('pc')+' » créée ('+F[k].s+')');save()}
+ D.patrols.push({id:uid(),f:k,c:v('pc'),veh:vehVal(),ty:$('pt')?$('pt').value:'',crew,n:v('pn'),st:'En service',t:Date.now(),by:U.id});jlog('Fiche de patrouille « '+v('pc')+' » créée ('+F[k].s+')');save()}
+function copyTxt(t,b,lab){const done=()=>{b.textContent='Copié ✓';setTimeout(()=>b.textContent=lab,1500)},
+ old=()=>{const i=document.createElement('textarea');i.value=t;document.body.appendChild(i);i.select();try{document.execCommand('copy')}catch(x){}i.remove();done()};
+ navigator.clipboard?navigator.clipboard.writeText(t).then(done,old):old()}
+function copyCrew(id,b){const p=D.patrols.find(x=>x.id==id);if(p)copyTxt(p.crew.map(nm).join(' & '),b,'Copier l’effectif')}
 function tgl(id){const p=D.patrols.find(x=>x.id==id);p.st=p.st=='En service'?'Terminée':'En service';jlog('Patrouille « '+p.c+' » : '+p.st);save()}
 function addEvent(ev,k){ev.preventDefault();const aw=[...document.querySelectorAll('.ea:checked')].map(c=>c.value),m=v('em'),x={id:uid(),f:k,t:v('et'),d:v('ed'),m,aw:m?aw.filter(i=>!holders(m).includes(i)):aw};
  if(x.aw.length<aw.length)alert('Certaines personnes avaient déjà cette médaille : elles sont ignorées.');D.events.push(x);jlog('Événement « '+x.t+' » créé ('+F[k].s+')'+(m?' · médaille « '+medName(m)+' » à '+aw.length+' personne(s)':''));save()}
@@ -329,22 +333,28 @@ function moveMedal(id,d){const m=D.medals.find(x=>x.id==id),L=medL(m.f);reorder(
 function moveVList(k,l,d){if(!l)l=realGen(k)||l;mvArr(D.vl[k],D.vl[k].indexOf(l),d);save()}
 function moveVeh(k,i,d){const l=vn(D.veh[k][i]).l;mvArr(D.veh[k],i,d,x=>vn(x).l==l);save()}
 const vn=x=>typeof x=='string'?{n:x,l:''}:x,q=t=>e(JSON.stringify(t));
+const vmA=k=>{D.vm=D.vm||{BRB:[],RD:[],PR:[]};return D.vm[k]=D.vm[k]||[]},multi=(k,l)=>vmA(k).includes(l);
+function vehInput(k,l){const V=D.veh[k].map(vn).filter(x=>x.l==l);
+ return multi(k,l)?`<div class=chk>${V.map(x=>`<label><input type=checkbox class=pvm value="${e(x.n)}">${e(x.n)}</label>`).join('')||'<span class=mu>Aucun véhicule.</span>'}</div>`:`<select id=pv>${V.map(x=>`<option>${e(x.n)}</option>`).join('')}</select>`}
 function vehSel(k){const V=D.veh[k].map(vn),ls=[...(D.vl[k]||[]),...(V.some(x=>!x.l)?['']:[])],l0=ls[0]??'';
  return `${ls.some(Boolean)?`<label>Type de patrouille</label><select id=pt onchange="fillVeh('${k}')">${ls.map(l=>`<option value="${e(l)}">${e(l||'Général')}</option>`).join('')}</select>`:''}
- <label>Véhicule</label><select id=pv>${V.filter(x=>x.l==l0).map(x=>`<option>${e(x.n)}</option>`).join('')}</select>`}
-function fillVeh(k){const l=$('pt').value;$('pv').innerHTML=D.veh[k].map(vn).filter(x=>x.l==l).map(x=>`<option>${e(x.n)}</option>`).join('')}
+ <label>Véhicule(s)</label><div id=pvc>${vehInput(k,l0)}</div>`}
+function fillVeh(k){$('pvc').innerHTML=vehInput(k,$('pt').value)}
+const vehVal=()=>{const m=[...document.querySelectorAll('.pvm:checked')].map(c=>c.value);return m.length?m.join(', '):($('pv')?.value||'')};
+function toggleMulti(k,l,on){const n=l||'Général';if(!l)l=realGen(k)||l;const A=vmA(k);if(on&&!A.includes(l))A.push(l);if(!on)D.vm[k]=A.filter(x=>x!=l);jlog('Véhicules : liste « '+n+' » '+(on?'autorise plusieurs véhicules':'limitée à un véhicule')+' ('+F[k].s+')');save()}
 function vehHtml(k){const V=D.veh[k].map(vn),ls=[...(D.vl[k]||[]),...(V.some(x=>!x.l)?['']:[])];
  return `<h3 class=st style="margin-top:0">Véhicules par type de patrouille</h3>
  <form class="card row" onsubmit="addVList(event,'${k}')"><div style="flex:2"><label>Nouvelle liste de véhicules</label><input id=vl required placeholder="Ex : Sanef, Astreinte Enedis, Astreinte GRDF…"></div><button class=btn>Créer la liste</button></form>
  <div style="display:flex;flex-direction:column;gap:16px;margin-top:14px">${ls.map(l=>`<div class="card f"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><h3>${e(l||'Général')}</h3>${`<span>${arr(d=>`moveVList('${k}',${q(l)},${d})`)} <button class="btn g s" onclick="renVList('${k}',${q(l)})">Renommer</button> <button class="btn g s" onclick="delVList('${k}',${q(l)})">Supprimer</button></span>`}</div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">${V.map((x,i)=>x.l==l?`<span class=pill><a class=ar onclick="moveVeh('${k}',${i},-1)">‹</a>${e(x.n)}<a class=ar onclick="moveVeh('${k}',${i},1)">›</a> <a style="cursor:pointer" onclick="delVeh('${k}',${i})">✕</a></span>`:'').join('')||'<span class=mu>Aucun véhicule.</span>'}</div>
+  <label style="display:flex;gap:8px;align-items:center;color:var(--tx);font-size:.9rem;margin:0"><input type=checkbox style="width:auto" ${multi(k,l)?'checked':''} onchange="toggleMulti('${k}',${q(l)},this.checked)">Plusieurs véhicules possibles par patrouille</label>
+  <div>${V.map((x,i)=>x.l==l?`<div class=mi><span>${e(x.n)}</span><span style="white-space:nowrap">${arr(d=>`moveVeh('${k}',${i},${d})`)} <a class=ar onclick="delVeh('${k}',${i})">✕</a></span></div>`:'').join('')||'<span class=mu>Aucun véhicule.</span>'}</div>
   <form onsubmit="addVeh(event,'${k}',${q(l)})" style="display:flex;gap:8px;margin-top:6px"><input name=n placeholder="Nouveau véhicule" required><button class="btn s" style="margin:0">Ajouter</button></form></div>`).join('')}</div>`}
 function addVList(ev,k){ev.preventDefault();const n=v('vl');D.vl[k]=D.vl[k]||[];if(D.vl[k].includes(n))return alert('Cette liste existe déjà.');D.vl[k].push(n);jlog('Véhicules : liste « '+n+' » créée ('+F[k].s+')');save()}
 function realGen(k){const V=D.veh[k].map(vn);if(!V.some(x=>!x.l))return;let n='Général';if(D.vl[k].includes(n))n='Général (anciens)';D.veh[k]=V.map(x=>x.l?x:{...x,l:n});D.vl[k].push(n);return n}
 function renVList(k,l){const old=l||'Général',n=(prompt('Nouveau nom de la liste',old)||'').trim();if(!n||(l&&n==l))return;
  if(!l)l=realGen(k)||l;if(D.vl[k].includes(n)&&n!=l)return alert('Cette liste existe déjà.');
- D.vl[k]=D.vl[k].map(x=>x==l?n:x);D.veh[k]=D.veh[k].map(vn).map(x=>x.l==l?{...x,l:n}:x);jlog('Véhicules : liste « '+old+' » renommée « '+n+' »');save()}
-function delVList(k,l){const gen=!l,nm0=l||'Général';if(confirm('Supprimer la liste « '+nm0+' » et ses véhicules ?')){if(gen)l=realGen(k)||l;jlog('Véhicules : liste « '+nm0+' » supprimée ('+F[k].s+')');D.vl[k]=D.vl[k].filter(x=>x!=l);D.veh[k]=D.veh[k].map(vn).filter(x=>x.l!=l);save()}}
+ vmA(k);D.vm[k]=D.vm[k].map(x=>x==l?n:x);D.vl[k]=D.vl[k].map(x=>x==l?n:x);D.veh[k]=D.veh[k].map(vn).map(x=>x.l==l?{...x,l:n}:x);jlog('Véhicules : liste « '+old+' » renommée « '+n+' »');save()}
+function delVList(k,l){const gen=!l,nm0=l||'Général';if(confirm('Supprimer la liste « '+nm0+' » et ses véhicules ?')){if(gen)l=realGen(k)||l;jlog('Véhicules : liste « '+nm0+' » supprimée ('+F[k].s+')');vmA(k);D.vm[k]=D.vm[k].filter(x=>x!=l);D.vl[k]=D.vl[k].filter(x=>x!=l);D.veh[k]=D.veh[k].map(vn).filter(x=>x.l!=l);save()}}
 /* ===== MÉDAILLES : attribution / retrait ===== */
 function medalsHtml(k,cd){const aw=awardFor&&D.medals.find(m=>m.id==awardFor);
  return `${aw&&aw.f==k?`<form class=card style="margin:12px 0" onsubmit="saveAward(event,'${aw.id}','${k}')"><h4>Attribuer ou retirer « ${e(aw.name)} »</h4><p class=mu>Coche pour attribuer, décoche pour retirer. Une personne ne peut avoir la même médaille qu’une seule fois.</p><div class=chk>${memb(k).map(u=>`<label><input type=checkbox class=aw value="${e(u.id)}"${holders(aw.id).includes(u.id)?' checked':''}>${e(u.name)}</label>`).join('')}</div>
@@ -507,10 +517,10 @@ const key=(c,x)=>c=='users'?uk(x):x.id;
 let snap={},unsubs=[],loaded={},ready=false,cfgJ='',settingUp=false,sec=null;
 let lastFail=0;const W={users:5,patrols:1,events:2,tx:2,news:2,maps:2,medals:2,gear:2,infos:2,infosdir:2,sales:2,logs:1};
 const fail=(x,c)=>{console.warn(c,x);if(c=='logs'||Date.now()-lastFail<4000)return;lastFail=Date.now();alert('Action refusée par le serveur ('+(x.code||'erreur')+') — collection « '+(c||'?')+' ». Vérifie les règles Firebase ou tes droits.')};
-const cfgOf=()=>JSON.stringify({veh:D.veh,vl:D.vl,ord:D.ord,links:D.links,menu:D.menu,logos:D.logos});
+const cfgOf=()=>JSON.stringify({veh:D.veh,vl:D.vl,ord:D.ord,links:D.links,vm:D.vm,menu:D.menu,logos:D.logos});
 
 /* Données publiques : menu, véhicules, logos */
-S.onSnapshot(S.doc(db,'cfg','main'),d=>{const x=d.data();if(x){D.veh={BRB:[],RD:[],PR:[],...(x.veh||{})};D.vl={BRB:[],RD:[],PR:[],...(x.vl||{})};D.ord={BRB:[],RD:[],PR:[],...(x.ord||{})};D.links=x.links||{};D.menu=x.menu||[];D.logos=x.logos||{};cfgJ=cfgOf()}softRender()},()=>{});
+S.onSnapshot(S.doc(db,'cfg','main'),d=>{const x=d.data();if(x){D.veh={BRB:[],RD:[],PR:[],...(x.veh||{})};D.vl={BRB:[],RD:[],PR:[],...(x.vl||{})};D.ord={BRB:[],RD:[],PR:[],...(x.ord||{})};D.links=x.links||{};D.vm={BRB:[],RD:[],PR:[],...(x.vm||{})};D.menu=x.menu||[];D.logos=x.logos||{};cfgJ=cfgOf()}softRender()},()=>{});
 try{SETUP=!(await S.getDoc(S.doc(db,'meta','init'))).exists()}catch(x){}
 
 function listen(u){unsubs.forEach(f=>f());unsubs=[];loaded={};ready=false;AUTHID=u.email.split('@')[0];
