@@ -326,7 +326,7 @@ function catOrder(){const cs=[...new Set(D.menu.map(m=>m.c))];if(cs.length<2)ret
 function moveGear(id,d){const g=gl(id),L=gearL(g.f);reorder(L,L.findIndex(x=>x.id==id),d)}
 function moveItem(lid,iid,d){const g=gl(lid);mvArr(g.items,g.items.findIndex(x=>x.id==iid),d);save()}
 function moveMedal(id,d){const m=D.medals.find(x=>x.id==id),L=medL(m.f);reorder(L,L.findIndex(x=>x.id==id),d)}
-function moveVList(k,l,d){mvArr(D.vl[k],D.vl[k].indexOf(l),d);save()}
+function moveVList(k,l,d){if(!l)l=realGen(k)||l;mvArr(D.vl[k],D.vl[k].indexOf(l),d);save()}
 function moveVeh(k,i,d){const l=vn(D.veh[k][i]).l;mvArr(D.veh[k],i,d,x=>vn(x).l==l);save()}
 const vn=x=>typeof x=='string'?{n:x,l:''}:x,q=t=>e(JSON.stringify(t));
 function vehSel(k){const V=D.veh[k].map(vn),ls=[...(D.vl[k]||[]),...(V.some(x=>!x.l)?['']:[])],l0=ls[0]??'';
@@ -336,86 +336,15 @@ function fillVeh(k){const l=$('pt').value;$('pv').innerHTML=D.veh[k].map(vn).fil
 function vehHtml(k){const V=D.veh[k].map(vn),ls=[...(D.vl[k]||[]),...(V.some(x=>!x.l)?['']:[])];
  return `<h3 class=st style="margin-top:0">Véhicules par type de patrouille</h3>
  <form class="card row" onsubmit="addVList(event,'${k}')"><div style="flex:2"><label>Nouvelle liste de véhicules</label><input id=vl required placeholder="Ex : Sanef, Astreinte Enedis, Astreinte GRDF…"></div><button class=btn>Créer la liste</button></form>
- <div style="display:flex;flex-direction:column;gap:16px;margin-top:14px">${ls.map(l=>`<div class="card f"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><h3>${e(l||'Général')}</h3>${l?`<span>${arr(d=>`moveVList('${k}',${q(l)},${d})`)} <button class="btn g s" onclick="renVList('${k}',${q(l)})">Renommer</button> <button class="btn g s" onclick="delVList('${k}',${q(l)})">Supprimer</button></span>`:''}</div>
+ <div style="display:flex;flex-direction:column;gap:16px;margin-top:14px">${ls.map(l=>`<div class="card f"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><h3>${e(l||'Général')}</h3>${`<span>${arr(d=>`moveVList('${k}',${q(l)},${d})`)} <button class="btn g s" onclick="renVList('${k}',${q(l)})">Renommer</button> <button class="btn g s" onclick="delVList('${k}',${q(l)})">Supprimer</button></span>`}</div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">${V.map((x,i)=>x.l==l?`<span class=pill><a class=ar onclick="moveVeh('${k}',${i},-1)">‹</a>${e(x.n)}<a class=ar onclick="moveVeh('${k}',${i},1)">›</a> <a style="cursor:pointer" onclick="delVeh('${k}',${i})">✕</a></span>`:'').join('')||'<span class=mu>Aucun véhicule.</span>'}</div>
   <form onsubmit="addVeh(event,'${k}',${q(l)})" style="display:flex;gap:8px;margin-top:6px"><input name=n placeholder="Nouveau véhicule" required><button class="btn s" style="margin:0">Ajouter</button></form></div>`).join('')}</div>`}
 function addVList(ev,k){ev.preventDefault();const n=v('vl');D.vl[k]=D.vl[k]||[];if(D.vl[k].includes(n))return alert('Cette liste existe déjà.');D.vl[k].push(n);jlog('Véhicules : liste « '+n+' » créée ('+F[k].s+')');save()}
-function renVList(k,l){const n=(prompt('Nouveau nom de la liste',l)||'').trim();if(!n||n==l||D.vl[k].includes(n))return;
- D.vl[k]=D.vl[k].map(x=>x==l?n:x);D.veh[k]=D.veh[k].map(vn).map(x=>x.l==l?{...x,l:n}:x);jlog('Véhicules : liste « '+l+' » renommée « '+n+' »');save()}
-function delVList(k,l){if(confirm('Supprimer la liste « '+l+' » et ses véhicules ?')){jlog('Véhicules : liste « '+l+' » supprimée ('+F[k].s+')');D.vl[k]=D.vl[k].filter(x=>x!=l);D.veh[k]=D.veh[k].map(vn).filter(x=>x.l!=l);save()}}
-function medalsHtml(k,cd){const aw=awardFor&&D.medals.find(m=>m.id==awardFor),who=id=>[...new Set(D.events.filter(x=>x.m==id).flatMap(x=>x.aw||[]))];
- return `${aw&&aw.f==k?`<form class=card style="margin:12px 0" onsubmit="saveAward(event,'${aw.id}','${k}')"><h4>Attribuer ou retirer « ${e(aw.name)} »</h4><p class=mu>Coche pour attribuer, décoche pour retirer. Une personne ne peut avoir la même médaille qu’une seule fois.</p><div class=chk>${memb(k).map(u=>`<label><input type=checkbox class=aw value="${e(u.id)}"${holders(aw.id).includes(u.id)?' checked':''}>${e(u.name)}</label>`).join('')}</div>
-  <div style="display:flex;gap:10px;flex-wrap:wrap"><div style="flex:2"><label>Motif des nouvelles attributions (facultatif)</label><input id=ar placeholder="Ex : Intervention du 12"></div><div><label>Date</label><input id=ad type=date value="${today()}" required></div></div>
-  <div><button class=btn>Enregistrer</button> <button type=button class="btn g" onclick="awardFor=null;render()">Annuler</button></div></form>`:''}
- <div class=mats style="margin-top:12px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">${medL(k).map(m=>`<div class=mat>${medImg(m)}<b>${e(m.name)}</b><small>${e(m.desc)}</small>
-  ${who(m.id).length?`<small>Décernée à : ${who(m.id).map(i=>e(nm(i))+(cd?` <a class=ar onclick="revoke('${m.id}',${q(i)})">✕</a>`:'')).join(', ')}</small>`:''}
-  ${cd?`<div class=mact><button class="btn s" onclick="awardFor='${m.id}';render()">Attribuer / retirer</button>${arr(d=>`moveMedal('${m.id}',${d})`)}<button class="btn g s" onclick="delMedal('${m.id}')">Supprimer</button></div>`:''}</div>`).join('')||'<p class=mu>Aucune médaille créée.</p>'}</div>${cd&&modeOf('med')=='lib'?libHtml('med'+k):''}`}
-function saveAward(ev,mid,k){ev.preventDefault();const sel=[...document.querySelectorAll('.aw:checked')].map(c=>c.value),cur=holders(mid),shown=memb(k).map(u=>u.id),
- add=sel.filter(i=>!cur.includes(i)),rem=cur.filter(i=>shown.includes(i)&&!sel.includes(i));
- if(rem.length){D.events.forEach(x=>{if(x.m==mid)x.aw=(x.aw||[]).filter(i=>!rem.includes(i))});D.events=D.events.filter(x=>!(x.direct&&!(x.aw||[]).length));jlog('Médaille « '+medName(mid)+' » retirée à '+rem.map(nm).join(', '))}
- if(add.length){D.events.push({id:uid(),f:k,t:v('ar')||'Attribution directe',d:v('ad'),m:mid,aw:add,direct:true});jlog('Médaille « '+medName(mid)+' » attribuée à '+add.map(nm).join(', '))}
- awardFor=null;save()}
-function revoke(mid,u){if(!confirm('Retirer cette médaille à '+nm(u)+' ?'))return;D.events.forEach(x=>{if(x.m==mid&&(x.aw||[]).includes(u))x.aw=x.aw.filter(i=>i!=u)});
- D.events=D.events.filter(x=>!(x.direct&&!(x.aw||[]).length));jlog('Médaille « '+medName(mid)+' » retirée à '+nm(u));save()}
-/* ===== INFOS ===== */
-const linkify=t=>e(t).replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener" style="color:var(--ac)">$1</a>');
-function infoHtml(k,cd,vis){const K=vis=='dir'?'infosdir':'infos',L=D[K].filter(x=>x.f==k).sort(ordc),ed=editI&&D[K].find(x=>x.id==editI);
- return `<h3 class=st style="margin-top:0">${vis=='dir'?'Infos direction':'Infos'}</h3><p class=mu style="margin:-6px 0 14px">${vis=='dir'?'Visibles uniquement par la direction.':'Informations diverses sur la filiale, visibles par tous ses membres.'}</p>
- ${cd?`<form class=card onsubmit="saveInfo(event,'${k}','${vis}')"><label>${ed?'Modifier l’info':'Titre'}</label><input id=it value="${e(ed?.t||'')}" required><label>Contenu</label><textarea id=ix rows=4>${e(ed?.x||'')}</textarea>
- <div><button class=btn>${ed?'Enregistrer':'Publier'}</button>${ed?` <button type=button class="btn g" onclick="editI=null;render()">Annuler</button>`:''}</div></form>`:''}
- <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px">${L.map(x=>`<div class="card f"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><h3>${e(x.t)}</h3>
-  ${cd?`<span>${arr(d=>`moveInfo('${K}','${x.id}',${d})`)} <button class="btn g s" onclick="editI='${x.id}';render()">Modifier</button> <button class="btn g s" onclick="delInfo('${K}','${x.id}')">Supprimer</button></span>`:''}</div>
-  <div style="white-space:pre-wrap">${linkify(x.x||'')}</div><small>${x.d} · ${e(nm(x.by))}</small></div>`).join('')||'<p class=mu>Aucune info pour le moment.</p>'}</div>`}
-function saveInfo(ev,k,vis){ev.preventDefault();const K=vis=='dir'?'infosdir':'infos',w=' ('+F[k].s+(vis=='dir'?', direction':'')+')';
- if(editI){const x=D[K].find(y=>y.id==editI);x.t=v('it');x.x=v('ix');jlog('Info « '+x.t+' » modifiée'+w);editI=null}
- else{D[K].push({id:uid(),f:k,t:v('it'),x:v('ix'),d:new Date().toLocaleDateString('fr-FR'),by:U.id});jlog('Info « '+v('it')+' » publiée'+w)}save()}
-function delInfo(K,id){const x=D[K].find(y=>y.id==id);if(confirm('Supprimer « '+x.t+' » ?')){jlog('Info « '+x.t+' » supprimée');D[K]=D[K].filter(y=>y.id!=id);save()}}
-function moveInfo(K,id,d){const x=D[K].find(y=>y.id==id),L=D[K].filter(y=>y.f==x.f).sort(ordc);reorder(L,L.findIndex(y=>y.id==id),d)}
-/* ===== DOSSIERS D'IMAGES / LIENS ===== */
-const dirOf=kind=>D.links?.[kind+'Dir']||(kind.startsWith('gear')?D.links?.gearDir:kind.startsWith('med')?D.links?.medDir:'')||'';
-const libKey=kind=>kind.startsWith('gear')?kind.slice(4):kind,libLabel=key=>F[key]?'matériel '+F[key].s:key=='menu'?'menu':'médailles '+(F[key.slice(3)]?.s||'');
-const libOf=kind=>D.links?.lib?.[libKey(kind)]||[];
-const sysOf=kind=>kind.startsWith('gear')?'gear':kind.startsWith('med')?'med':kind;
-const modeOf=sys=>D.links?.mode?.[sys]||(sys=='map'?'link':'lib');
-function imgCtl(kind,pid,fid,val,ph){const m=modeOf(sysOf(kind));val=val&&!String(val).startsWith('data:')?val:'';
- if(m=='upload')return `<input id=${fid} type=file accept="image/*">`;
- if(m=='link')return `<input id=${pid} value="${e(val)}" placeholder="${e(ph||'https://… ou dossier/image.jpg')}">`;
- return `<input id=${pid} readonly value="${e(val)}" placeholder="Aucune image choisie">${pkBtn(kind,pid)}`}
-const modeSel=(id,sys,lab,opts)=>`<div><label>${lab}</label><select id=${id}>${opts.map(([k,t])=>`<option value=${k}${modeOf(sys)==k?' selected':''}>${t}</option>`).join('')}</select></div>`;
-const pkBtn=(kind,id)=>{const m=modeOf(sysOf(kind)),ok=m=='lib'?libOf(kind).length:dirOf(kind);
- return ok?`<button type=button class="btn g s" style="margin-top:6px" onclick="pickImg('${kind}','${id}')">📁 Choisir une image</button>`:`<small class=mu>${m=='lib'?'Ajoute d’abord des images à la bibliothèque.':'Définis d’abord le dossier dans Gestion → Configuration.'}</small>`};
-const safeUrl=u=>/^(https?:\/\/|[\w.\/-]+$)/i.test(u||'')?u:'#',IMGC={};
-async function pickImg(kind,tid){const md=modeOf(sysOf(kind)),dir=md=='folder'?dirOf(kind).replace(/^\/|\/$/g,''):'',lib=md=='lib'?libOf(kind):[];if(!dir&&!lib.length)return alert('Aucune image proposée : ajoute des liens à la bibliothèque ou définis un dossier (Gestion → Configuration).');
- const m=location.hostname.match(/^(.+)\.github\.io$/);let repo=((D.links||{}).repo||'').trim();
- if(!repo&&m){const seg=location.pathname.split('/')[1];repo=m[1]+'/'+(seg&&!seg.includes('.')?seg:m[1]+'.github.io')}
- const o=document.createElement('div');o.id='pk';o.style.cssText='position:fixed;inset:0;background:#000b;z-index:50;display:grid;place-items:center;padding:16px';
- o.innerHTML='<div style="background:var(--pn);border:1px solid var(--ln);border-radius:16px;padding:18px;max-width:780px;width:100%;max-height:80vh;overflow:auto"><div style="display:flex;justify-content:space-between;margin-bottom:12px"><h3>Choisir une image</h3><button class="btn g s" onclick="document.getElementById(\'pk\').remove()">Fermer</button></div><div id=pkg class=mu>Chargement…</div></div>';
- document.body.appendChild(o);
- let items=lib.map(x=>({n:x.n,p:x.u})),note='';
- if(dir){if(!repo)note='Dépôt GitHub non détecté : indique-le dans Gestion → Configuration.';else try{let L=IMGC[repo+dir];if(!L){const r=await fetch('https://api.github.com/repos/'+repo+'/contents/'+dir);if(!r.ok)throw new Error(r.status);L=(await r.json()).filter(f=>f.type=='file'&&/\.(png|jpe?g|webp|gif|svg)$/i.test(f.name));IMGC[repo+dir]=L}
-  items=items.concat(L.map(f=>({n:f.name,p:dir+'/'+f.name})))}catch(x){note='Dossier « '+dir+' » illisible ('+x.message+') : vérifie le nom et que le dépôt est public.'}}
- $('pkg').innerHTML=(items.length?'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px">'+items.map(f=>'<div class=mat style="cursor:pointer" data-p="'+e(f.p)+'"><div class=mimg><img src="'+e(f.p)+'" alt=""></div><small>'+e(f.n)+'</small></div>').join('')+'</div>':'Aucune image trouvée.')+(note?'<p style="margin-top:10px">'+e(note)+'</p>':'');
- document.querySelectorAll('#pkg [data-p]').forEach(n=>n.onclick=()=>{$(tid).value=n.dataset.p;$('pk').remove()})}
-function libHtml(key){const L=D.links?.lib?.[key]||[];
- return `<h3 class=st>Bibliothèque d’images (liens Postimages) · ${libLabel(key)}</h3><p class=mu style="margin:-6px 0 14px">Colle les <b>liens directs</b> des images (ils commencent par https://i.postimg.cc/…). Ils seront proposés avec le bouton « Choisir une image ». Une ligne par image : « Nom | lien », ou seulement le lien.</p>
- <form class=card onsubmit="libAdd(event,'${key}')"><textarea id=libtxt rows=3 required placeholder="Nom | https://i.postimg.cc/abc123/image.png"></textarea><div><button class=btn>Ajouter à la bibliothèque</button></div></form>
- <div class=mats style="margin-top:12px">${L.map((x,i)=>`<div class=mat><div class=mimg><img src="${e(x.u)}" alt=""></div><b style="font-size:.85rem;word-break:break-word">${e(x.n)}</b><div class=mact><button class="btn g s" onclick="libMove('${key}',${i},-1)">◀</button><button class="btn g s" onclick="libMove('${key}',${i},1)">▶</button><button class="btn g s" onclick="libRen('${key}',${i})">Renommer</button><button class="btn g s" onclick="libDel('${key}',${i})">Retirer</button></div></div>`).join('')}</div>`}
-function libAdd(ev,key){ev.preventDefault();D.links=D.links||{};D.links.lib=D.links.lib||{};const L=D.links.lib[key]=D.links.lib[key]||[],bad=[],n0=L.length;
- v('libtxt').split('\n').map(x=>x.trim()).filter(Boolean).forEach(line=>{const p=line.includes('|')?line.split('|').map(x=>x.trim()):['',line],u=p[p.length-1];
-  if(!/^https?:\/\//i.test(u)||/^https?:\/\/(www\.)?postimg\.cc\//i.test(u)){bad.push(line);return}
-  const n_=(p.length>1&&p[0])||decodeURIComponent(u.split('/').pop().split('?')[0]).replace(/\.[a-z0-9]+$/i,'');if(!L.some(x=>x.u==u))L.push({n:n_,u})});
- if(bad.length)alert('Lien(s) ignoré(s) : utilise le lien direct (https://i.postimg.cc/…), pas le lien de la page postimg.cc.\n\n'+bad.join('\n'));
- if(L.length>n0){jlog('Bibliothèque d’images ('+libLabel(key)+') : '+(L.length-n0)+' image(s) ajoutée(s)');save()}}
-function libRen(key,i){const x=D.links.lib[key][i],n=(prompt('Nouveau nom de l’image',x.n)||'').trim();if(!n||n==x.n)return;jlog('Bibliothèque d’images ('+libLabel(key)+') : « '+x.n+' » renommée « '+n+' »');x.n=n;save()}
-function libMove(key,i,d){mvArr(D.links.lib[key],i,d);save()}
-function libDel(key,i){const x=D.links.lib[key][i];if(confirm('Retirer « '+x.n+' » de la bibliothèque ?')){jlog('Bibliothèque d’images ('+libLabel(key)+') : « '+x.n+' » retirée');D.links.lib[key].splice(i,1);save()}}
-function saveLinks(ev){ev.preventDefault();D.links={...D.links,repo:v('lrp'),...Object.fromEntries(Object.keys(F).map(k=>['gear'+k+'Dir',v('ldg'+k)])),menuDir:v('ldm'),medDir:v('ldd'),mapDir:v('ldc'),mode:{gear:v('modG'),menu:v('modM'),med:v('modD'),map:v('modC')}};jlog('Configuration modifiée (dossiers d’images)');save()}
-const calLinkCard=(key,title,act)=>{const u=D.links?.[key]||'';return `<form class="card" onsubmit="saveCalLink(event,'${key}')"><b>${title}</b><label>Lien</label><input id=cl_${key} value="${e(u)}" placeholder="https://…">
- <div><button class=btn>Enregistrer</button>${u?` <a class="btn g" style="text-decoration:none" href="${e(safeUrl(u))}" target=_blank rel=noopener>${act}</a> <button type=button class="btn g" onclick="copyCal(this,'${key}')">Copier le lien</button>`:''}</div></form>`};
-function copyCal(b,key){const t=D.links?.[key]||'',done=()=>{b.textContent='Copié ✓';setTimeout(()=>b.textContent='Copier le lien',1500)},
- old=()=>{const i=document.createElement('textarea');i.value=t;document.body.appendChild(i);i.select();try{document.execCommand('copy')}catch(x){}i.remove();done()};
- navigator.clipboard?navigator.clipboard.writeText(t).then(done,old):old()}
-function saveCalLink(ev,key){ev.preventDefault();D.links={...D.links,[key]:v('cl_'+key)};jlog('Lien du calendrier 2027 ('+(key=='cal'?'ouverture':'téléchargement')+') mis à jour');save()}
+function realGen(k){const V=D.veh[k].map(vn);if(!V.some(x=>!x.l))return;let n='Général';if(D.vl[k].includes(n))n='Général (anciens)';D.veh[k]=V.map(x=>x.l?x:{...x,l:n});D.vl[k].push(n);return n}
+function renVList(k,l){const old=l||'Général',n=(prompt('Nouveau nom de la liste',old)||'').trim();if(!n||(l&&n==l))return;
+ if(!l)l=realGen(k)||l;if(D.vl[k].includes(n)&&n!=l)return alert('Cette liste existe déjà.');
+ D.vl[k]=D.vl[k].map(x=>x==l?n:x);D.veh[k]=D.veh[k].map(vn).map(x=>x.l==l?{...x,l:n}:x);jlog('Véhicules : liste « '+old+' » renommée « '+n+' »');save()}
+function delVList(k,l){const gen=!l,nm0=l||'Général';if(confirm('Supprimer la liste « '+nm0+' » et ses véhicules ?')){if(gen)l=realGen(k)||l;jlog('Véhicules : liste « '+nm0+' » supprimée ('+F[k].s+')');D.vl[k]=D.vl[k].filter(x=>x!=l);D.veh[k]=D.veh[k].map(vn).filter(x=>x.l!=l);save()}}
 function addVeh(ev,k,l){ev.preventDefault();const n=ev.target.n.value.trim();if(!n)return;D.veh[k].push({n,l:l||''});jlog('Véhicules : « '+n+' » ajouté'+(l?' à « '+l+' »':'')+' ('+F[k].s+')');save()}
 function delVeh(k,i){const x=vn(D.veh[k][i]);if(confirm('Retirer « '+x.n+' » ?')){jlog('Véhicules : « '+x.n+' » retiré ('+F[k].s+')');D.veh[k].splice(i,1);save()}}
 function menuForm(){const m=editM!=null?D.menu[editM]:null,fr=!!m&&m.p==null,cats=[...new Set(D.menu.map(x=>x.c))];
