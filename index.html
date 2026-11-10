@@ -80,15 +80,15 @@ const R={president:['Président',4],vp:['Vice-Président',3],directeur:['Directe
 const IC={home:'🏠',menu:'🍽️',map:'🗺️',adm:'📋',tre:'💰',ges:'⚙️',jnl:'📜'};
 const seed=()=>({users:[{id:'S.Mouveau',name:'Samuel Mouveau',pin:'9999',role:'salarie',admin:true,fs:[],dirs:[],grade:'Administrateur'}],
  patrols:[],events:[],tx:[],news:[],maps:[],medals:[],sales:[],logs:[],gear:[],infos:[],infosdir:[],
- veh:{BRB:['BRB-01 · Van de balisage','BRB-02 · Fourgon'],RD:['RD-01 · Food truck'],PR:['PR-01 · SUV presse']},vl:{BRB:[],RD:[],PR:[]},ord:{BRB:[],RD:[],PR:[]},links:{},vm:{BRB:[],RD:[],PR:[]},
+ veh:{BRB:['BRB-01 · Van de balisage','BRB-02 · Fourgon'],RD:['RD-01 · Food truck'],PR:['PR-01 · SUV presse']},vl:{BRB:[],RD:[],PR:[]},ord:{BRB:[],RD:[],PR:[]},links:{},vm:{BRB:[],RD:[],PR:[]},sts:{BRB:[],RD:[],PR:[]},
  menu:[{n:'Muffin chocolat',p:5,c:'Douceurs'},{n:'Café chaud',p:3,c:'Boissons'}],logos:{}});
 /* Compatibilité anciens comptes : admin/membre/f -> admin(bool)/salarie/fs[] */
 const norm=u=>{u={...u};if(u.role=='admin'){u.admin=true;u.role='salarie'}if(u.role=='membre')u.role='salarie';
  u.fs=u.fs||(u.f?[u.f]:[]);u.dirs=u.dirs||(u.role=='directeur'&&u.f?[u.f]:[]);if(u.role=='directeur')u.dirs.forEach(k=>{if(!u.fs.includes(k))u.fs.push(k)});delete u.f;delete u.medals;return u};
-const load=()=>{let d;try{d=JSON.parse(localStorage.getItem(KEY))}catch(x){}d=d||seed();d.users=d.users.map(norm);d.maps=d.maps||[];d.medals=d.medals||[];d.sales=d.sales||[];d.logs=d.logs||[];d.gear=d.gear||[];d.infos=d.infos||[];d.infosdir=d.infosdir||[];d.vl=d.vl||{BRB:[],RD:[],PR:[]};d.ord=d.ord||{BRB:[],RD:[],PR:[]};d.links=d.links||{};d.vm=d.vm||{BRB:[],RD:[],PR:[]};return d};
+const load=()=>{let d;try{d=JSON.parse(localStorage.getItem(KEY))}catch(x){}d=d||seed();d.users=d.users.map(norm);d.maps=d.maps||[];d.medals=d.medals||[];d.sales=d.sales||[];d.logs=d.logs||[];d.gear=d.gear||[];d.infos=d.infos||[];d.infosdir=d.infosdir||[];d.vl=d.vl||{BRB:[],RD:[],PR:[]};d.ord=d.ord||{BRB:[],RD:[],PR:[]};d.links=d.links||{};d.vm=d.vm||{BRB:[],RD:[],PR:[]};d.sts=d.sts||{BRB:[],RD:[],PR:[]};return d};
 const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(D))}catch(x){alert('Stockage plein : réduis la taille des logos.')}};
 const FB_ON=!!window.FIREBASE_CONFIG;let SETUP=false,AUTHID=null,pending=false,mKeep=false,curMap='base',editU=null,FT='pat',jf='',editM=null,editG=null,awardFor=null,editI=null;
-let D=FB_ON?{users:[],patrols:[],events:[],tx:[],news:[],maps:[],medals:[],sales:[],logs:[],gear:[],infos:[],infosdir:[],veh:{BRB:[],RD:[],PR:[]},vl:{BRB:[],RD:[],PR:[]},ord:{BRB:[],RD:[],PR:[]},links:{},vm:{BRB:[],RD:[],PR:[]},menu:[],logos:{}}:load(),U=null,P='home',placing=false;
+let D=FB_ON?{users:[],patrols:[],events:[],tx:[],news:[],maps:[],medals:[],sales:[],logs:[],gear:[],infos:[],infosdir:[],veh:{BRB:[],RD:[],PR:[]},vl:{BRB:[],RD:[],PR:[]},ord:{BRB:[],RD:[],PR:[]},links:{},vm:{BRB:[],RD:[],PR:[]},sts:{BRB:[],RD:[],PR:[]},menu:[],logos:{}}:load(),U=null,P='home',placing=false;
 if(!FB_ON)try{U=D.users.find(u=>u.id==sessionStorage.s)||null}catch(x){}
 const save=()=>{FB_ON?window.FBX?.sync():persist();render()};
 /* Rafraîchit sans casser un formulaire en cours de saisie */
@@ -178,7 +178,7 @@ map(){const m=gm(),ev=D.events.filter(x=>x.x!=null&&(x.mp||'base')==m.id).sort((
 
 adm(){
  return `<div class=ph><h2>Administratif</h2></div><div class=grid>${Object.entries(F).filter(([k])=>canD(k)).map(([k,f])=>`<div class="card f" style="--ac:${f.c}"><h3>${f.s}</h3>
- <span>${D.users.filter(u=>inF(u,k)).length} membres</span><span>${D.patrols.filter(p=>p.f==k&&p.st=='En service').length} patrouille(s) en service</span>
+ <span>${D.users.filter(u=>inF(u,k)).length} membres</span><span>${D.patrols.filter(p=>p.f==k).length} patrouille(s) déclarée(s)</span>
  <span>${D.events.filter(x=>x.f==k).length} événement(s)</span><b>Solde : ${money(bal(k))}</b></div>`).join('')}</div>
  <h3 class=st>Publier une annonce</h3><form class=card onsubmit="addNews(event)"><label>Titre</label><input id=nt required><label>Message</label><input id=nx required><button class=btn>Publier</button></form>
  ${D.news.slice().reverse().map(n=>`<div class="card row" style="margin-top:10px"><div><b>${e(n.t)}</b><br><small>${n.d} · ${e(nm(n.by))}</small></div><button class="btn g s" onclick="del('news','${n.id}')">Supprimer</button></div>`).join('')}`},
@@ -232,23 +232,23 @@ Object.keys(F).forEach(k=>PG[k]=()=>fil(k));
 function fil(k){
  const f=F[k],cd=canD(k),mem=memb(k),ps=D.patrols.filter(p=>p.f==k).sort((a,b)=>b.t-a.t),ev=D.events.filter(x=>x.f==k&&!x.direct).sort((a,b)=>b.d.localeCompare(a.d));
  return `<div class=ph><div class=lgo>${lg(k)}</div><div><h2>${f.n}</h2><p class=mu>${f.d}</p></div></div>
- <div class=tabs>${[['pat','Patrouilles'+(ps.some(p=>p.st=='En service')?' · '+ps.filter(p=>p.st=='En service').length:'')],['eff','Effectif'],['mat','Matériel'],['med','Médailles'],['evt','Événements'],['info','Infos'],...(cd?[['infod','Infos direction']]:[]),...(cd&&k=='BRB'?[['cal','Calendrier 2027']]:[]),...(cd?[['ges','Gestion']]:[])].map(([t,l])=>`<a class="tb${FT==t?' on':''}" tabindex=0 onclick="FT='${t}';render()">${l}</a>`).join('')}</div>
- ${FT=='pat'?`<h3 class=st style="margin-top:0">Fiches de patrouille</h3><div class=two>
+ <div class=tabs>${[['pat','Patrouilles'+(ps.length?' · '+ps.length:'')],['eff','Effectif'],['mat','Matériel'],['med','Médailles'],['evt','Événements'],['info','Infos'],...(cd?[['infod','Infos direction']]:[]),...(cd&&k=='BRB'?[['cal','Calendrier 2027']]:[]),...(cd?[['ges','Gestion']]:[])].map(([t,l])=>`<a class="tb${FT==t?' on':''}" tabindex=0 onclick="FT='${t}';render()">${l}</a>`).join('')}</div>
+ ${FT=='pat'?`<h3 class=st style="margin-top:0">Fiches de patrouille</h3>${ps.length?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">${stList(k).map(x=>({x,n:ps.filter(p=>p.st==x.n).length})).filter(o=>o.n).map(o=>`<span class=pill style="--ac:${o.x.c}">${o.n} · ${e(o.x.n)}</span>`).join('')}</div>`:''}<div class=two>
  <form class=card onsubmit="addPatrol(event,'${k}')"><h4>Nouvelle fiche</h4><label>Indicatif</label><input id=pc required placeholder="Ex : ${f.s.slice(0,3).toUpperCase()}-Alpha 1">
  ${vehSel(k)}
  <label>Effectif</label><div class=chk>${mem.map(u=>`<label><input type=checkbox class=pm value="${u.id}">${e(u.name)} <small>${e(u.grade)}</small></label>`).join('')||'<span class=mu>Aucun membre dans cette filiale.</span>'}</div>
  <label>Notes</label><input id=pn><button class=btn>Créer la fiche</button></form>
- <div>${ps.map(p=>`<div class="card pat${p.st=='En service'?'':' off'}"><div style="display:flex;justify-content:space-between;gap:8px"><h4>${e(p.c)}</h4><span class=pill>${p.st}</span></div>
+ <div>${ps.map(p=>`<div class="card pat" style="border-left-color:${stColor(k,p.st)}"><div style="display:flex;justify-content:space-between;gap:8px"><h4>${e(p.c)}</h4><span class=pill style="--ac:${stColor(k,p.st)}">${e(p.st)}</span></div>
  <span>🚗 ${e(p.veh)}${p.ty?` · <span class=pill>${e(p.ty)}</span>`:''}</span><span>👥 ${p.crew.map(i=>e(nm(i))).join(', ')}</span>${p.n?`<span class=mu>${e(p.n)}</span>`:''}
  <small>${new Date(p.t).toLocaleString('fr-FR')} · ${e(nm(p.by))}</small>
- <div><button class="btn g s" onclick="tgl('${p.id}')">${p.st=='En service'?'Terminer':'Reprendre'}</button> <button class="btn g s" onclick="copyCrew('${p.id}',this)">Copier l’effectif</button> ${cd||p.by==U.id?`<button class="btn g s" onclick="del('patrols','${p.id}')">Supprimer</button>`:''}</div></div>`).join('')||'<p class=mu>Aucune fiche. Crée la première depuis le formulaire.</p>'}</div></div>
+ <div><select onchange="setSt('${p.id}',this.value)" style="width:auto;padding:5px 8px;font-size:.85rem">${stList(k).some(x=>x.n==p.st)?'':`<option selected>${e(p.st)}</option>`}${stList(k).map(x=>`<option${x.n==p.st?' selected':''}>${e(x.n)}</option>`).join('')}</select> <button class="btn g s" onclick="copyCrew('${p.id}',this)">Copier l’effectif</button> ${cd||p.by==U.id?`<button class="btn g s" onclick="del('patrols','${p.id}')">Supprimer</button>`:''}</div></div>`).join('')||'<p class=mu>Aucune fiche. Crée la première depuis le formulaire.</p>'}</div></div>
  `:''}${FT=='eff'?`<h3 class=st style="margin-top:0">Effectif</h3><div class=tw><table><tr><th>Nom</th><th>Rôle</th><th>Grade</th><th>Médailles</th>${cd?'<th>Ordre</th>':''}</tr>${mem.map(u=>`<tr><td>${e(u.name)}</td><td>${rl(u)}</td><td>${e(u.grade)}</td><td>${medals(u.id).length?'🏅 '+medals(u.id).length:'—'}</td>${cd?`<td style="white-space:nowrap">${arr(d=>`moveMember('${k}','${u.id}',${d})`)}</td>`:''}</tr>`).join('')}</table></div>
  `:''}${FT=='mat'?gearHtml(k,cd):''}${FT=='med'?`<h3 class=st style="margin-top:0">Médailles</h3>${cd?`<form class="card row" onsubmit="addMedal(event,'${k}')"><div><label>Titre</label><input id=mdn required placeholder="Ex : Mérite du balisage"></div><div style="flex:2"><label>Description</label><input id=mdd required></div><div><label>Image (facultatif)</label>${imgCtl('med'+k,'mdu','mdi','')}</div><button class=btn>Créer la médaille</button></form>`:''}
  ${medalsHtml(k,cd)}`:''}${FT=='evt'?`<h3 class=st style="margin-top:0">Événements et attribution</h3>
  ${cd?`<form class=card onsubmit="addEvent(event,'${k}')"><div class=row style="display:flex;gap:10px"><div style="flex:2"><label>Événement</label><input id=et required></div><div><label>Date</label><input id=ed type=date value="${today()}" required></div><div><label>Médaille décernée</label><select id=em><option value="">Aucune</option>${medL(k).map(m=>`<option value="${m.id}">${e(m.name)}</option>`).join('')}</select></div></div>
  <label>Récompensés</label><div class=chk>${mem.map(u=>`<label><input type=checkbox class=ea value="${u.id}">${e(u.name)}</label>`).join('')}</div><button class=btn>Créer l’événement</button>${k=='BRB'?'<small>Pour le placer sur la carte, utilise « Poser un événement » dans Carte interactive.</small>':''}</form>`:''}
  ${ev.map(x=>`<div class="card" style="margin-top:10px"><b>${e(x.t)}</b><small>${x.d}${x.m?' · 🏅 '+e(medName(x.m)):''}${x.x!=null?' · 📍 sur la carte':''}</small>${x.aw?.length?`<span>${x.aw.map(i=>e(nm(i))).join(', ')}</span>`:''}${cd?`<div><button class="btn g s" onclick="del('events','${x.id}')">Supprimer</button></div>`:''}</div>`).join('')||'<p class=mu style="margin-top:10px">Aucun événement.</p>'}
- `:''}${FT=='info'?infoHtml(k,cd,'all'):''}${FT=='infod'&&cd?infoHtml(k,cd,'dir'):''}${FT=='cal'&&k=='BRB'&&cd?calHtml(mem):''}${FT=='ges'&&cd?`${vehHtml(k)}
+ `:''}${FT=='info'?infoHtml(k,cd,'all'):''}${FT=='infod'&&cd?infoHtml(k,cd,'dir'):''}${FT=='cal'&&k=='BRB'&&cd?calHtml(mem):''}${FT=='ges'&&cd?`${vehHtml(k)}${stsHtml(k)}
  ${k=='RD'&&cd?`<h3 class=st>Menu</h3>${menuForm()}${catOrder()}
  <div class=tw><table><tr><th>Produit</th><th>Catégorie</th><th>Prix</th><th>Rupture de stock</th><th></th></tr>${D.menu.map((m,i)=>`<tr><td>${m.img?`<img class=mth src="${m.img}" alt="" style="width:36px;height:36px;vertical-align:middle;margin-right:8px">`:''}${e(m.n)}</td><td>${e(m.c)}</td><td>${pr(m)}</td><td><input type=checkbox style="width:auto" ${m.out?'checked':''} onchange="toggleOut(${i},this.checked)"></td><td style="white-space:nowrap">${arr(d=>`moveMenu(${i},${d})`)} <a style="cursor:pointer" onclick="editM=${i};render()">✏️</a> <a style="cursor:pointer" onclick="delMenu(${i})">✕</a></td></tr>`).join('')}</table></div>${modeOf('menu')=='lib'?libHtml('menu'):''}`:''}`:''}`}
 
@@ -263,12 +263,27 @@ async function doSetup(ev){ev.preventDefault();const id=v('si');if(!/^[A-Za-z0-9
 async function myPin(){const p=prompt('Nouveau PIN (4 caractères minimum)');if(!p||p.length<4)return;try{await FBX.setPin(p);alert('PIN modifié.')}catch(x){alert('Déconnecte-toi, reconnecte-toi, puis réessaie.')}}
 function addPatrol(ev,k){ev.preventDefault();const crew=[...document.querySelectorAll('.pm:checked')].map(c=>c.value);
  if(!crew.length)return alert('Sélectionne au moins un membre d’effectif.');
- D.patrols.push({id:uid(),f:k,c:v('pc'),veh:vehVal(),ty:$('pt')?$('pt').value:'',crew,n:v('pn'),st:'En service',t:Date.now(),by:U.id});jlog('Fiche de patrouille « '+v('pc')+' » créée ('+F[k].s+')');save()}
+ D.patrols.push({id:uid(),f:k,c:v('pc'),veh:vehVal(),ty:$('pt')?$('pt').value:'',crew,n:v('pn'),st:stList(k)[0].n,t:Date.now(),by:U.id});jlog('Fiche de patrouille « '+v('pc')+' » créée ('+F[k].s+')');save()}
 function copyTxt(t,b,lab){const done=()=>{b.textContent='Copié ✓';setTimeout(()=>b.textContent=lab,1500)},
  old=()=>{const i=document.createElement('textarea');i.value=t;document.body.appendChild(i);i.select();try{document.execCommand('copy')}catch(x){}i.remove();done()};
  navigator.clipboard?navigator.clipboard.writeText(t).then(done,old):old()}
 function copyCrew(id,b){const p=D.patrols.find(x=>x.id==id);if(p)copyTxt(p.crew.map(nm).join(' & '),b,'Copier l’effectif')}
-function tgl(id){const p=D.patrols.find(x=>x.id==id);p.st=p.st=='En service'?'Terminée':'En service';jlog('Patrouille « '+p.c+' » : '+p.st);save()}
+const STS0=[['Disponible','#4ade80'],['En intervention','#f97316'],['Indisponible','#f87171'],['En formation','#60a5fa'],['Sur événement','#c084fc'],['En convoi','#22d3ee'],['Sur chantier','#facc15']].map(([n,c])=>({n,c}));
+const stList=k=>(D.sts?.[k]?.length?D.sts[k]:STS0),stColor=(k,n)=>stList(k).find(x=>x.n==n)?.c||'#8e9bb5';
+function setSt(id,n){const p=D.patrols.find(x=>x.id==id);jlog('Patrouille « '+p.c+' » : '+p.st+' → '+n);p.st=n;save()}
+function stEdit(k){D.sts=D.sts||{BRB:[],RD:[],PR:[]};if(!D.sts[k]||!D.sts[k].length)D.sts[k]=STS0.map(x=>({...x}));return D.sts[k]}
+function stAdd(ev,k){ev.preventDefault();const n=v('stn'),A=stEdit(k);if(A.some(x=>x.n==n))return alert('Ce statut existe déjà.');A.push({n,c:$('stc').value||'#8e9bb5'});jlog('Statuts de patrouille : « '+n+' » ajouté ('+F[k].s+')');save()}
+function stColorSet(k,i,c){stEdit(k)[i].c=c;save()}
+function stRen(k,i){const A=stEdit(k),o=A[i].n,n=(prompt('Nouveau nom du statut',o)||'').trim();if(!n||n==o||A.some(x=>x.n==n))return;A[i].n=n;D.patrols.forEach(p=>{if(p.f==k&&p.st==o)p.st=n});jlog('Statuts de patrouille : « '+o+' » renommé « '+n+' »');save()}
+function stMove(k,i,d){mvArr(stEdit(k),i,d);save()}
+function stDel(k,i){const A=stEdit(k);if(A.length<2)return alert('Garde au moins un statut.');if(confirm('Supprimer le statut « '+A[i].n+' » ?')){jlog('Statuts de patrouille : « '+A[i].n+' » supprimé ('+F[k].s+')');A.splice(i,1);save()}}
+function stReset(k){if(confirm('Revenir aux statuts par défaut ?')){D.sts[k]=[];jlog('Statuts de patrouille : valeurs par défaut rétablies ('+F[k].s+')');save()}}
+function stsHtml(k){const A=stList(k);
+ return `<h3 class=st>Statuts de patrouille</h3><p class=mu style="margin:-6px 0 14px">Les statuts proposés sur chaque fiche de patrouille de la filiale.</p>
+ <div class="card f"><div>${A.map((x,i)=>`<div class=mi><span style="display:flex;gap:10px;align-items:center"><input type=color value="${x.c}" style="width:34px;height:28px;padding:0;border:0;background:none" onchange="stColorSet('${k}',${i},this.value)">${e(x.n)}</span>
+  <span style="white-space:nowrap">${arr(d=>`stMove('${k}',${i},${d})`)} <a class=ar onclick="stRen('${k}',${i})">✏️</a> <a class=ar onclick="stDel('${k}',${i})">✕</a></span></div>`).join('')}</div>
+  <form onsubmit="stAdd(event,'${k}')" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px"><input id=stn placeholder="Nouveau statut" required style="flex:2;min-width:140px"><input id=stc type=color value="#8e9bb5" style="width:44px;height:38px;padding:2px;flex:none"><button class="btn s" style="margin:0">Ajouter</button>
+  <button type=button class="btn g s" style="margin:0" onclick="stReset('${k}')">Valeurs par défaut</button></form></div>`}
 function addEvent(ev,k){ev.preventDefault();const aw=[...document.querySelectorAll('.ea:checked')].map(c=>c.value),m=v('em'),x={id:uid(),f:k,t:v('et'),d:v('ed'),m,aw:m?aw.filter(i=>!holders(m).includes(i)):aw};
  if(x.aw.length<aw.length)alert('Certaines personnes avaient déjà cette médaille : elles sont ignorées.');D.events.push(x);jlog('Événement « '+x.t+' » créé ('+F[k].s+')'+(m?' · médaille « '+medName(m)+' » à '+aw.length+' personne(s)':''));save()}
 function addMedal(ev,k){ev.preventDefault();const fl=$('mdi')?.files[0],fin=img=>{D.medals.push({id:uid(),f:k,name:v('mdn'),desc:v('mdd'),img:img||''});jlog('Médaille « '+v('mdn')+' » créée ('+F[k].s+')');save()};
@@ -517,10 +532,10 @@ const key=(c,x)=>c=='users'?uk(x):x.id;
 let snap={},unsubs=[],loaded={},ready=false,cfgJ='',settingUp=false,sec=null;
 let lastFail=0;const W={users:5,patrols:1,events:2,tx:2,news:2,maps:2,medals:2,gear:2,infos:2,infosdir:2,sales:2,logs:1};
 const fail=(x,c)=>{console.warn(c,x);if(c=='logs'||Date.now()-lastFail<4000)return;lastFail=Date.now();alert('Action refusée par le serveur ('+(x.code||'erreur')+') — collection « '+(c||'?')+' ». Vérifie les règles Firebase ou tes droits.')};
-const cfgOf=()=>JSON.stringify({veh:D.veh,vl:D.vl,ord:D.ord,links:D.links,vm:D.vm,menu:D.menu,logos:D.logos});
+const cfgOf=()=>JSON.stringify({veh:D.veh,vl:D.vl,ord:D.ord,links:D.links,vm:D.vm,sts:D.sts,menu:D.menu,logos:D.logos});
 
 /* Données publiques : menu, véhicules, logos */
-S.onSnapshot(S.doc(db,'cfg','main'),d=>{const x=d.data();if(x){D.veh={BRB:[],RD:[],PR:[],...(x.veh||{})};D.vl={BRB:[],RD:[],PR:[],...(x.vl||{})};D.ord={BRB:[],RD:[],PR:[],...(x.ord||{})};D.links=x.links||{};D.vm={BRB:[],RD:[],PR:[],...(x.vm||{})};D.menu=x.menu||[];D.logos=x.logos||{};cfgJ=cfgOf()}softRender()},()=>{});
+S.onSnapshot(S.doc(db,'cfg','main'),d=>{const x=d.data();if(x){D.veh={BRB:[],RD:[],PR:[],...(x.veh||{})};D.vl={BRB:[],RD:[],PR:[],...(x.vl||{})};D.ord={BRB:[],RD:[],PR:[],...(x.ord||{})};D.links=x.links||{};D.vm={BRB:[],RD:[],PR:[],...(x.vm||{})};D.sts={BRB:[],RD:[],PR:[],...(x.sts||{})};D.menu=x.menu||[];D.logos=x.logos||{};cfgJ=cfgOf()}softRender()},()=>{});
 try{SETUP=!(await S.getDoc(S.doc(db,'meta','init'))).exists()}catch(x){}
 
 function listen(u){unsubs.forEach(f=>f());unsubs=[];loaded={};ready=false;AUTHID=u.email.split('@')[0];
