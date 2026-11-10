@@ -1,0 +1,10 @@
+{
+  "name": "Prestige Compagnie",
+  "short_name": "Prestige",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0c0f1f",
+  "theme_color": "#0c0f1f",
+  "icons": [{ "src": "img/prestige.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }]
+}

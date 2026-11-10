@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Prestige Compagnie</title>
+<link rel="icon" id="fav" href="img/prestige.png">
+<link rel="apple-touch-icon" href="img/prestige.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0c0f1f">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0c0f1f;--pn:#141831;--pn2:#1c2142;--ln:#2c3360;--tx:#eef0f8;--mu:#9299b8;--ac:#d4b055;--rose:#a51c3c}
@@ -52,6 +56,7 @@ th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--ln);font-s
 .mk{position:absolute;width:44px;height:44px;transform:translate(-50%,-50%) scale(var(--k,1));cursor:pointer;filter:drop-shadow(0 2px 4px #000a)}.mk img{width:100%;height:100%;display:block}
 .mi{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px dashed var(--ln)}.mi:last-child{border:0}.mi b{color:var(--ac);white-space:nowrap}
 .mth{width:48px;height:48px;border-radius:10px;object-fit:cover;flex:none}
+.tg{cursor:pointer;color:var(--mu);padding-right:6px;user-select:none}.tg:hover{color:var(--tx)}
 .ar{cursor:pointer;color:var(--mu);padding:2px 4px}.ar:hover{color:var(--tx)}
 textarea{resize:vertical}
 .mats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
@@ -90,6 +95,12 @@ const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(D))}catch(x){aler
 const FB_ON=!!window.FIREBASE_CONFIG;let SETUP=false,AUTHID=null,pending=false,mKeep=false,curMap='base',editU=null,FT='pat',jf='',editM=null,editG=null,awardFor=null,editI=null;
 let D=FB_ON?{users:[],patrols:[],events:[],tx:[],news:[],maps:[],medals:[],sales:[],logs:[],gear:[],infos:[],infosdir:[],veh:{BRB:[],RD:[],PR:[]},vl:{BRB:[],RD:[],PR:[]},ord:{BRB:[],RD:[],PR:[]},links:{},vm:{BRB:[],RD:[],PR:[]},sts:{BRB:[],RD:[],PR:[]},menu:[],logos:{}}:load(),U=null,P='home',placing=false;
 if(!FB_ON)try{U=D.users.find(u=>u.id==sessionStorage.s)||null}catch(x){}
+let favU='',COL={};try{COL=JSON.parse(localStorage.getItem('prestige_col'))||{}}catch(x){}
+const isCol=k=>!!COL[k],colSave=()=>{try{localStorage.setItem('prestige_col',JSON.stringify(COL))}catch(x){}};
+function toggleCol(k){if(COL[k])delete COL[k];else COL[k]=1;colSave();render()}
+function colAll(keys,on){keys.forEach(k=>{if(on)COL[k]=1;else delete COL[k]});colSave();render()}
+const chev=k=>`<a class=tg onclick="toggleCol(${q(k)})" title="Plier / déplier">${isCol(k)?'▸':'▾'}</a>`;
+const colBar=keys=>keys.length>1?`<div style="display:flex;gap:8px;margin-top:14px"><button class="btn g s" onclick="colAll(${q(keys)},true)">Tout plier</button><button class="btn g s" onclick="colAll(${q(keys)},false)">Tout déplier</button></div>`:'';
 const save=()=>{FB_ON?window.FBX?.sync():persist();render()};
 /* Rafraîchit sans casser un formulaire en cours de saisie */
 function softRender(){const a=document.activeElement;if(a&&/INPUT|SELECT/.test(a.tagName)&&a.closest('main'))pending=true;else render()}
@@ -129,6 +140,7 @@ function nav(){
  return it.map(([k,t])=>`<a class="nv${P==k?' on':''}" tabindex=0 onclick="go('${k}')" style="--ac:${F[k]?.c||'#d4b055'}">${F[k]?`<img class=ni src="${lu(k)}" alt="">`:IC[k]||'🔑'} ${t}</a>`).join('')}
 
 function render(){
+ {const u_=lu('main');if(u_!==favU){favU=u_;const f_=document.getElementById('fav');if(f_)f_.href=u_}}
  if(FB_ON)U=AUTHID?D.users.find(u=>uk(u)==AUTHID)||null:null;else if(U)U=usr(U.id)||null;
  if(U&&(P=='login'||P=='setup'))P='home';
  const need={map:1,adm:2,tre:2,ges:5,jnl:5};
@@ -316,13 +328,13 @@ function readImg(fl,max,cb){const im=new Image();im.onload=()=>{const s=Math.min
 function gearHtml(k,cd){const L=gearL(k);
  return `<h3 class=st style="margin-top:0">Matériel</h3><p class=mu style="margin:-6px 0 14px">Matériel minimum conseillé pour partir en patrouille, à titre indicatif.</p>
  ${cd?`<form class="card row" onsubmit="addGearList(event,'${k}')"><div style="flex:2"><label>Nouvelle liste de matériel</label><input id=gn required placeholder="Ex : Patrouille, Astreinte Enedis, Astreinte GRDF…"></div><button class=btn>Créer la liste</button></form>`:''}
- <div style="display:flex;flex-direction:column;gap:16px;margin-top:14px">${L.map(g=>`<div class="card f"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><h3>${e(g.name)}</h3>
+ ${colBar(L.map(g=>'gear:'+g.id))}<div style="display:flex;flex-direction:column;gap:16px;margin-top:14px">${L.map(g=>`<div class="card f"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><h3>${chev('gear:'+g.id)} ${e(g.name)} <small class=mu>(${g.items.length})</small></h3>
   ${cd?`<span>${arr(d=>`moveGear('${g.id}',${d})`)} <button class="btn g s" onclick="renGear('${g.id}')">Renommer</button> <button class="btn g s" onclick="delGear('${g.id}')">Supprimer</button></span>`:''}</div>
-  <div class=mats>${g.items.map(it=>cd&&editG==g.id+':'+it.id?
+  ${isCol('gear:'+g.id)?'':`<div class=mats>${g.items.map(it=>cd&&editG==g.id+':'+it.id?
    `<form class=mat style="align-items:stretch;text-align:left" onsubmit="saveItem(event,'${g.id}','${it.id}')"><input id=en value="${e(it.n)}" required><input id=eq type=number min=0 value="${it.q}">${imgCtl('gear'+k,'eu','ei',it.img)}<div><button class="btn s">OK</button> <button type=button class="btn g s" onclick="editG=null;render()">Annuler</button></div></form>`:
    `<div class=mat><div class=mimg>${it.img?`<img src="${it.img}" alt="">`:'📦'}</div><b>${e(it.n)}</b><span class=pill>× ${it.q}</span>
    ${cd?`<div class=mact><button class="btn g s" onclick="moveItem('${g.id}','${it.id}',-1)">◀</button><button class="btn g s" onclick="moveItem('${g.id}','${it.id}',1)">▶</button><button class="btn g s" onclick="qtyItem('${g.id}','${it.id}',-1)">−</button><button class="btn g s" onclick="qtyItem('${g.id}','${it.id}',1)">+</button><button class="btn g s" onclick="editG='${g.id}:${it.id}';render()">✏️</button><button class="btn g s" onclick="delItem('${g.id}','${it.id}')">✕</button></div>`:''}</div>`).join('')||'<p class=mu>Aucun matériel dans cette liste.</p>'}</div>
-  ${cd?`<form onsubmit="addItem(event,'${g.id}')" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-top:6px"><div style="flex:2;min-width:120px"><label>Matériel</label><input id=gm${g.id} required></div><div style="width:80px"><label>Qté</label><input id=gq${g.id} type=number min=0 value=1></div><div style="flex:2;min-width:180px"><label>Image</label>${imgCtl('gear'+k,'gu'+g.id,'gi'+g.id,'')}</div><button class="btn s" style="margin:0">Ajouter</button></form>`:''}</div>`).join('')||'<p class=mu>Aucune liste de matériel.</p>'}</div>${cd&&modeOf('gear')=='lib'?libHtml(k):''}`}
+  ${cd?`<form onsubmit="addItem(event,'${g.id}')" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-top:6px"><div style="flex:2;min-width:120px"><label>Matériel</label><input id=gm${g.id} required></div><div style="width:80px"><label>Qté</label><input id=gq${g.id} type=number min=0 value=1></div><div style="flex:2;min-width:180px"><label>Image</label>${imgCtl('gear'+k,'gu'+g.id,'gi'+g.id,'')}</div><button class="btn s" style="margin:0">Ajouter</button></form>`:''}`}</div>`).join('')||'<p class=mu>Aucune liste de matériel.</p>'}</div>${cd&&modeOf('gear')=='lib'?libHtml(k):''}`}
 function addGearList(ev,k){ev.preventDefault();const n=v('gn');D.gear.push({id:uid(),f:k,name:n,items:[]});jlog('Matériel : liste « '+n+' » créée ('+F[k].s+')');save()}
 function renGear(id){const g=gl(id),n=prompt('Nom de la liste',g.name);if(n&&n.trim()){jlog('Matériel : liste « '+g.name+' » renommée « '+n.trim()+' »');g.name=n.trim();save()}}
 function delGear(id){const g=gl(id);if(confirm('Supprimer la liste « '+g.name+' » et tout son matériel ?')){jlog('Matériel : liste « '+g.name+' » supprimée');D.gear=D.gear.filter(x=>x.id!=id);save()}}
@@ -360,10 +372,10 @@ function toggleMulti(k,l,on){const n=l||'Général';if(!l)l=realGen(k)||l;const 
 function vehHtml(k){const V=D.veh[k].map(vn),ls=[...(D.vl[k]||[]),...(V.some(x=>!x.l)?['']:[])];
  return `<h3 class=st style="margin-top:0">Véhicules par type de patrouille</h3>
  <form class="card row" onsubmit="addVList(event,'${k}')"><div style="flex:2"><label>Nouvelle liste de véhicules</label><input id=vl required placeholder="Ex : Sanef, Astreinte Enedis, Astreinte GRDF…"></div><button class=btn>Créer la liste</button></form>
- <div style="display:flex;flex-direction:column;gap:16px;margin-top:14px">${ls.map(l=>`<div class="card f"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><h3>${e(l||'Général')}</h3>${`<span>${arr(d=>`moveVList('${k}',${q(l)},${d})`)} <button class="btn g s" onclick="renVList('${k}',${q(l)})">Renommer</button> <button class="btn g s" onclick="delVList('${k}',${q(l)})">Supprimer</button></span>`}</div>
-  <label style="display:flex;gap:8px;align-items:center;color:var(--tx);font-size:.9rem;margin:0"><input type=checkbox style="width:auto" ${multi(k,l)?'checked':''} onchange="toggleMulti('${k}',${q(l)},this.checked)">Plusieurs véhicules possibles par patrouille</label>
+ ${colBar(ls.map(l=>'veh:'+k+':'+l))}<div style="display:flex;flex-direction:column;gap:16px;margin-top:14px">${ls.map(l=>`<div class="card f"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><h3>${chev('veh:'+k+':'+l)} ${e(l||'Général')} <small class=mu>(${V.filter(x=>x.l==l).length})</small></h3>${`<span>${arr(d=>`moveVList('${k}',${q(l)},${d})`)} <button class="btn g s" onclick="renVList('${k}',${q(l)})">Renommer</button> <button class="btn g s" onclick="delVList('${k}',${q(l)})">Supprimer</button></span>`}</div>
+  ${isCol('veh:'+k+':'+l)?'':`<label style="display:flex;gap:8px;align-items:center;color:var(--tx);font-size:.9rem;margin:0"><input type=checkbox style="width:auto" ${multi(k,l)?'checked':''} onchange="toggleMulti('${k}',${q(l)},this.checked)">Plusieurs véhicules possibles par patrouille</label>
   <div>${V.map((x,i)=>x.l==l?`<div class=mi><span>${e(x.n)}</span><span style="white-space:nowrap">${arr(d=>`moveVeh('${k}',${i},${d})`)} <a class=ar onclick="delVeh('${k}',${i})">✕</a></span></div>`:'').join('')||'<span class=mu>Aucun véhicule.</span>'}</div>
-  <form onsubmit="addVeh(event,'${k}',${q(l)})" style="display:flex;gap:8px;margin-top:6px"><input name=n placeholder="Nouveau véhicule" required><button class="btn s" style="margin:0">Ajouter</button></form></div>`).join('')}</div>`}
+  <form onsubmit="addVeh(event,'${k}',${q(l)})" style="display:flex;gap:8px;margin-top:6px"><input name=n placeholder="Nouveau véhicule" required><button class="btn s" style="margin:0">Ajouter</button></form>`}</div>`).join('')}</div>`}
 function addVList(ev,k){ev.preventDefault();const n=v('vl');D.vl[k]=D.vl[k]||[];if(D.vl[k].includes(n))return alert('Cette liste existe déjà.');D.vl[k].push(n);jlog('Véhicules : liste « '+n+' » créée ('+F[k].s+')');save()}
 function realGen(k){const V=D.veh[k].map(vn);if(!V.some(x=>!x.l))return;let n='Général';if(D.vl[k].includes(n))n='Général (anciens)';D.veh[k]=V.map(x=>x.l?x:{...x,l:n});D.vl[k].push(n);return n}
 function renVList(k,l){const old=l||'Général',n=(prompt('Nouveau nom de la liste',old)||'').trim();if(!n||(l&&n==l))return;
@@ -391,9 +403,9 @@ function infoHtml(k,cd,vis){const K=vis=='dir'?'infosdir':'infos',L=D[K].filter(
  return `<h3 class=st style="margin-top:0">${vis=='dir'?'Infos direction':'Infos'}</h3><p class=mu style="margin:-6px 0 14px">${vis=='dir'?'Visibles uniquement par la direction.':'Informations diverses sur la filiale, visibles par tous ses membres.'}</p>
  ${cd?`<form class=card onsubmit="saveInfo(event,'${k}','${vis}')"><label>${ed?'Modifier l’info':'Titre'}</label><input id=it value="${e(ed?.t||'')}" required><label>Contenu</label><textarea id=ix rows=4>${e(ed?.x||'')}</textarea>
  <div><button class=btn>${ed?'Enregistrer':'Publier'}</button>${ed?` <button type=button class="btn g" onclick="editI=null;render()">Annuler</button>`:''}</div></form>`:''}
- <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px">${L.map(x=>`<div class="card f"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><h3>${e(x.t)}</h3>
+ <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px">${L.map(x=>`<div class="card f"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><h3>${chev('info:'+x.id)} ${e(x.t)}</h3>
   ${cd?`<span>${arr(d=>`moveInfo('${K}','${x.id}',${d})`)} <button class="btn g s" onclick="editI='${x.id}';render()">Modifier</button> <button class="btn g s" onclick="delInfo('${K}','${x.id}')">Supprimer</button></span>`:''}</div>
-  <div style="white-space:pre-wrap">${linkify(x.x||'')}</div><small>${x.d} · ${e(nm(x.by))}</small></div>`).join('')||'<p class=mu>Aucune info pour le moment.</p>'}</div>`}
+  ${isCol('info:'+x.id)?'':`<div style="white-space:pre-wrap">${linkify(x.x||'')}</div><small>${x.d} · ${e(nm(x.by))}</small>`}</div>`).join('')||'<p class=mu>Aucune info pour le moment.</p>'}</div>`}
 function saveInfo(ev,k,vis){ev.preventDefault();const K=vis=='dir'?'infosdir':'infos',w=' ('+F[k].s+(vis=='dir'?', direction':'')+')';
  if(editI){const x=D[K].find(y=>y.id==editI);x.t=v('it');x.x=v('ix');jlog('Info « '+x.t+' » modifiée'+w);editI=null}
  else{D[K].push({id:uid(),f:k,t:v('it'),x:v('ix'),d:new Date().toLocaleDateString('fr-FR'),by:U.id});jlog('Info « '+v('it')+' » publiée'+w)}save()}
